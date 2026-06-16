@@ -1,0 +1,1966 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Gem I Am</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #ffffff;
+      overflow: hidden;
+      font-family: 'Cormorant Garamond', serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .viewport {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      padding: 1vw;
+      position: relative;
+    }
+
+    /* 16:9 고정 컨테이너 */
+    .game-container {
+      position: relative;
+      width: min(85vw, 85vh * 16 / 9);
+      aspect-ratio: 16 / 9;
+      background: #c6deff85;
+      border-radius: 1.2cqw;
+      overflow: visible;
+      container-type: inline-size;
+      container-name: stage;
+      padding: 2%;
+      margin: 0 auto;
+      z-index: 1;
+      flex-shrink: 0;
+      box-shadow: 0 1.2cqw 3cqw rgba(0,0,0,0.12);
+    }
+
+    /* ===== Spline 배경 ===== */
+    .spline-bg {
+      position: absolute;
+      inset: 0;
+      width: 120%;
+      height: 120%;
+      overflow: hidden;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .spline-embed,
+    .spline-bg spline-viewer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+    }
+
+    /* ===== Top Title (네비게이션 라벨) ===== */
+    .top-title {
+      position: absolute;
+      top: 2%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2cqw;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-weight: 500;
+      color: rgba(0,0,0,0.7);
+      white-space: nowrap;
+      z-index: 10;
+      transition: opacity 0.6s ease;
+    }
+
+    /* ===== 메인 빅 타이포 ===== */
+    .big-title {
+      position: absolute;
+      top: 15%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12cqw;
+      line-height: 0.86;
+      letter-spacing: -0.06em;
+      font-weight: 100;
+      color: rgba(0, 0, 0, 0.438);
+      z-index: 10;
+      text-align: center;
+      white-space: nowrap;
+      text-shadow:
+        0 0.3cqw 1cqw rgba(0,0,0,0.3),
+        0 0 10cqw rgba(255,255,255,0.4);
+      overflow: hidden;
+      transition: opacity 0.7s ease, transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* ===== 하단 카피 ===== */
+    .center-copy {
+      position: absolute;
+      width: 100%;
+      bottom: 2%;
+      left: 50%;
+      transform: translate(-50%, 0);
+      font-size: 2.5cqw;
+      line-height: 1.1;
+      text-align: center;
+      z-index: 5;
+      white-space: nowrap;
+      color: #00000080;
+      animation: unlockFloat 4.8s ease-in-out infinite;
+      transition: opacity 0.6s ease;
+    }
+    @keyframes unlockFloat {
+      0%   { transform: translateX(-50%) translateY(0); }
+      25%  { transform: translateX(-50%) translateY(-0.25cqw); }
+      50%  { transform: translateX(-50%) translateY(0.08cqw); }
+      75%  { transform: translateX(-50%) translateY(-0.18cqw); }
+      100% { transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ===== 카드 래퍼 ===== */
+    .cards-wrap {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      inset: 0;
+      padding: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .card {
+      position: absolute;
+      width: 18%;
+      aspect-ratio: 0.7;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+      border-radius: 0.6cqw;
+      border: 0.08cqw solid rgba(255,255,255,0.35);
+      box-shadow:
+        0 1cqw 2.5cqw rgba(0,0,0,0.15),
+        inset 0 0.3cqw 0.6cqw rgba(255,255,255,0.25),
+        inset 0 -0.3cqw 0.6cqw rgba(0,0,0,0.05);
+      transition:
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        filter 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.5s ease,
+        top 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+        left 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+        width 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+      cursor: pointer;
+      pointer-events: auto;
+      z-index: 3;
+      transform-origin: center center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 0.8cqw;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: linear-gradient(
+        120deg,
+        rgba(255,255,255,0.45) 0%,
+        rgba(255,255,255,0.08) 30%,
+        rgba(255,255,255,0.15) 60%,
+        rgba(255,255,255,0.3) 100%
+      );
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .card::after {
+      content: "";
+      position: absolute;
+      top: -20%;
+      left: -40%;
+      width: 180%;
+      height: 140%;
+      background: radial-gradient(
+        circle,
+        rgba(255,255,255,0.35),
+        rgba(255,255,255,0.05),
+        transparent
+      );
+      transform: rotate(25deg);
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .card-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 85%;
+      object-fit: cover;
+      border-radius: inherit;
+    }
+
+    .card-text {
+      position: absolute;
+      bottom: 3%;
+      left: 5%;
+      font-size: 1cqw;
+      color: #fff;
+      z-index: 2;
+    }
+
+    /* fan 위치 */
+    .c1  { left: -10%; top: 46%; --base-rotate: -8deg;  transform: rotate(var(--base-rotate)); }
+    .c2  { left: 0%;   top: 26%; --base-rotate: -25deg; transform: rotate(var(--base-rotate)); }
+    .c3  { left: 9%;   top: 42%; --base-rotate: -10deg; transform: rotate(var(--base-rotate)); }
+    .c4  { left: 18%;  top: 22%; --base-rotate: 0deg;   transform: rotate(var(--base-rotate)); }
+    .c5  { left: 27%;  top: 44%; --base-rotate: -5deg;  transform: rotate(var(--base-rotate)); }
+    .c6  { left: 36%;  top: 33%; --base-rotate: 0deg;   transform: rotate(var(--base-rotate)); }
+    .c7  { left: 47%;  top: 27%; --base-rotate: 0deg;   transform: rotate(var(--base-rotate)); }
+    .c8  { left: 56%;  top: 44%; --base-rotate: 5deg;   transform: rotate(var(--base-rotate)); }
+    .c9  { left: 65%;  top: 22%; --base-rotate: 0deg;   transform: rotate(var(--base-rotate)); }
+    .c10 { left: 74%;  top: 42%; --base-rotate: 10deg;  transform: rotate(var(--base-rotate)); }
+    .c11 { left: 83%;  top: 26%; --base-rotate: 25deg;  transform: rotate(var(--base-rotate)); }
+    .c12 { left: 92%;  top: 46%; --base-rotate: 8deg;   transform: rotate(var(--base-rotate)); }
+
+    .c1:hover, .c2:hover, .c3:hover, .c5:hover {
+      transform: translateY(-10%) rotate(calc(var(--base-rotate) - 5deg));
+    }
+    .c4:hover, .c6:hover, .c7:hover, .c8:hover,
+    .c9:hover, .c10:hover, .c11:hover, .c12:hover {
+      transform: translateY(-10%) rotate(calc(var(--base-rotate) + 5deg));
+    }
+
+    /* ===== Start 버튼 (초기 화면) ===== */
+    .start-cta {
+      position: absolute;
+      bottom: 14%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 12;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2cqw;
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .start-btn {
+      position: relative;
+      padding: 1.4cqw 4.8cqw;
+      border: none;
+      border-radius: 999px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2.2cqw;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.78);
+      background: rgba(255,255,255,0.55);
+      backdrop-filter: blur(18px) saturate(160%);
+      -webkit-backdrop-filter: blur(18px) saturate(160%);
+      border: 0.12cqw solid rgba(255,255,255,0.6);
+      box-shadow:
+        0 1.4cqw 3cqw rgba(0,0,0,0.16),
+        inset 0 0.3cqw 0.7cqw rgba(255,255,255,0.5),
+        inset 0 -0.2cqw 0.5cqw rgba(0,0,0,0.04);
+      cursor: pointer;
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+                  box-shadow 0.35s ease,
+                  background 0.35s ease;
+      animation: gentleFloat 4s ease-in-out infinite;
+    }
+
+    @keyframes gentleFloat {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-0.5cqw); }
+    }
+
+    .start-btn:hover {
+      transform: translateY(-0.6cqw) scale(1.04);
+      background: rgba(255,255,255,0.7);
+      box-shadow:
+        0 2cqw 4cqw rgba(0,0,0,0.2),
+        inset 0 0.3cqw 0.7cqw rgba(255,255,255,0.6),
+        0 0 3cqw rgba(255,180,220,0.4);
+    }
+
+    .start-btn::after {
+      content: "";
+      position: absolute;
+      inset: -0.4cqw;
+      border-radius: 999px;
+      border: 0.08cqw solid rgba(255,255,255,0.4);
+      opacity: 0.4;
+      animation: pulseRing 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulseRing {
+      0%, 100% { transform: scale(1); opacity: 0.3; }
+      50%      { transform: scale(1.06); opacity: 0.6; }
+    }
+
+    .start-hint {
+      font-size: 1cqw;
+      letter-spacing: 0.2em;
+      color: rgba(0,0,0,0.45);
+      text-transform: uppercase;
+    }
+
+    /* ===== 모드별 상태 ===== */
+    /* GATHERING: 모든 카드가 중앙으로 모임 */
+    body[data-mode="gathering"] .card {
+      left: 50% !important;
+      top: 50% !important;
+      width: 18%;
+      transform: translate(-50%, -50%) rotate(calc(var(--gather-rot, 0deg))) !important;
+      transition:
+        top 1s cubic-bezier(0.22, 1, 0.36, 1),
+        left 1s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 1s cubic-bezier(0.22, 1, 0.36, 1),
+        box-shadow 0.6s ease;
+      box-shadow:
+        0 1.4cqw 3cqw rgba(0,0,0,0.18),
+        inset 0 0.3cqw 0.6cqw rgba(255,255,255,0.25);
+    }
+    /* Gallery 복귀: 모든 카드가 다시 중앙 스택으로 모였다가 펼쳐짐 */
+body[data-mode="returning"] .card {
+  left: 50% !important;
+  top: 50% !important;
+  width: 18% !important;
+  opacity: 1 !important;
+  filter: none !important;
+  pointer-events: none !important;
+  transform: translate(-50%, -50%) rotate(calc(var(--gather-rot, 0deg))) !important;
+  transition:
+    top 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.45s ease,
+    filter 0.45s ease;
+}
+    body[data-mode="gathering"] .card:hover {
+      transform: translate(-50%, -50%) rotate(calc(var(--gather-rot, 0deg))) !important;
+    }
+
+    /* SHOWCASE 모드 */
+    body[data-mode="showcase"] .top-title,
+    body[data-mode="showcase"] .big-title,
+    body[data-mode="showcase"] .center-copy {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    body[data-mode="showcase"] .card {
+      pointer-events: none;
+      transition:
+        top 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+        left 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+        width 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.7s ease,
+        filter 0.7s ease;
+    }
+
+    /* showcase 카드 슬롯들 */
+    .card.show-prev,
+    .card.show-next,
+    .card.show-center {
+      pointer-events: auto !important;
+    }
+
+    .card.show-center {
+  left: 50% !important;
+  top: 100% !important;
+  width: 36% !important;       /* 36% → 26% (작게) */
+  transform: translate(-50%, -50%) rotate(0deg) !important;
+  z-index: 6 !important;
+  filter: drop-shadow(0 2cqw 3cqw rgba(0,0,0,0.25));
+}
+
+.card.show-prev {
+  left: -2% !important;        /* -3% → -2% */
+  top: 70% !important;
+  width: 20% !important;       /* 14% → 20% (크게) */
+  transform: translate(0, -50%) rotate(-6deg) !important;
+  z-index: 4 !important;
+  opacity: 0.85;
+  filter: blur(0.04cqw);
+  cursor: pointer;
+}
+
+.card.show-next {
+  left: 82% !important;        /* 89% → 82% (커진만큼 안쪽으로) */
+  top: 70% !important;
+  width: 20% !important;       /* 14% → 20% (크게) */
+  transform: translate(0, -50%) rotate(6deg) !important;
+  z-index: 4 !important;
+  opacity: 0.85;
+  filter: blur(0.04cqw);
+  cursor: pointer;
+}
+
+    .card.show-prev:hover,
+    .card.show-next:hover {
+      opacity: 1;
+      filter: blur(0);
+      transform: translate(0, -54%) rotate(-6deg) !important;
+    }
+    .card.show-next:hover {
+      transform: translate(0, -54%) rotate(6deg) !important;
+    }
+
+  .card.show-far {
+  pointer-events: none;
+  cursor: default;
+}
+
+    /* ===== Showcase 텍스트 영역 ===== */
+    .showcase-view {
+  position: absolute;
+  inset: 0;
+  z-index: 20; /* 카드보다 위 */
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+    body[data-mode="showcase"] .showcase-view {
+      opacity: 1;
+    }
+
+    .showcase-kicker {
+      position: absolute;
+      top: 14%;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 1.4cqw;
+      letter-spacing: 0.4em;
+      color: rgba(0,0,0,0.6);
+      text-transform: uppercase;
+      white-space: nowrap;
+      transition: opacity 0.5s ease, transform 0.6s ease;
+    }
+
+    .showcase-name {
+      position: absolute;
+      top: 30%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 9cqw;
+      line-height: 0.9;
+      letter-spacing: 0.04em;
+      font-weight: 500;
+      color: rgba(0,0,0,0.78);
+      white-space: nowrap;
+      text-shadow: 0 0.3cqw 1cqw rgba(255,255,255,0.4);
+      transition: opacity 0.5s ease, transform 0.6s ease;
+    }
+
+    .showcase-rule {
+      position: absolute;
+      top: 42%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 4cqw;
+      height: 0.15cqw;
+      background: rgba(0,0,0,0.4);
+      transition: opacity 0.5s ease, width 0.6s ease;
+    }
+
+    .showcase-desc {
+      position: absolute;
+      top: 47%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 56%;
+      font-size: 1.25cqw;
+      line-height: 1.5;
+      color: rgba(0,0,0,0.62);
+      text-align: center;
+      transition: opacity 0.5s ease, transform 0.6s ease;
+    }
+
+    .explore-btn {
+      position: absolute;
+      bottom: 14%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 1cqw 3.6cqw;
+      border: none;
+      border-radius: 999px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.4cqw;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.75);
+      background: rgba(255,255,255,0.85);
+      border: 0.1cqw solid rgba(255,255,255,0.7);
+      box-shadow:
+        0 1cqw 2.4cqw rgba(0,0,0,0.18),
+        inset 0 0.25cqw 0.6cqw rgba(255,255,255,0.5);
+      cursor: pointer;
+      pointer-events: auto;
+      backdrop-filter: blur(10px);
+      transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+      z-index: 7;
+    }
+
+    .explore-btn:hover {
+      transform: translateX(-50%) translateY(-0.3cqw);
+      background: rgba(255,255,255,0.95);
+      box-shadow:
+        0 1.4cqw 3cqw rgba(0,0,0,0.22),
+        0 0 2.4cqw rgba(255,180,220,0.4);
+    }
+
+    /* 양옆 라벨 */
+    .side-label {
+      position: absolute;
+      top: 70%;
+      transform: translateY(-50%);
+      font-size: 1.1cqw;
+      letter-spacing: 0.3em;
+      color: rgba(0,0,0,0.55);
+      text-transform: uppercase;
+      transition: opacity 0.5s ease;
+      pointer-events: none;
+    }
+    .side-label.prev { left: 13%; }
+    .side-label.next { right: 13%; }
+
+    /* 화살표 */
+    .nav-arrow {
+  position: absolute;
+  top: 32%;                 /* 50% → 32% (위로) — GARNET 이름 옆 정도 */
+  transform: translateY(-50%);
+  width: 3.4cqw;
+  height: 3.4cqw;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.45);
+  backdrop-filter: blur(16px) saturate(170%);
+  -webkit-backdrop-filter: blur(16px) saturate(170%);
+  border: 0.1cqw solid rgba(255,255,255,0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: auto;
+  z-index: 8;
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.35s ease,
+    box-shadow 0.35s ease,
+    border-color 0.35s ease;
+  box-shadow:
+    0 0.8cqw 2cqw rgba(0,0,0,0.12),
+    inset 0 0.25cqw 0.6cqw rgba(255,255,255,0.55),
+    inset 0 -0.15cqw 0.4cqw rgba(0,0,0,0.04);
+}
+
+.nav-arrow:hover {
+  transform: translateY(-50%) scale(1.1);
+  background: rgba(255,255,255,0.78);
+  border-color: rgba(255,255,255,0.85);
+  box-shadow:
+    0 1.2cqw 2.6cqw rgba(0,0,0,0.16),
+    0 0 1.8cqw rgba(244,114,182,0.4),     /* 핑크 글로우 */
+    0 0 2.6cqw rgba(167,139,250,0.25),    /* 보라 글로우 */
+    inset 0 0.25cqw 0.6cqw rgba(255,255,255,0.7);
+}
+
+.nav-arrow.prev-arrow:hover svg { transform: translateX(-0.18cqw); }
+.nav-arrow.next-arrow:hover svg { transform: translateX(0.18cqw); }
+
+.nav-arrow svg {
+  width: 38%;
+  height: 38%;
+  stroke: rgba(0,0,0,0.6);
+  stroke-width: 1.6;            /* 2 → 1.6 (얇고 우아하게) */
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.3s ease, stroke 0.3s ease;
+}
+
+.nav-arrow:hover svg { stroke: rgba(0,0,0,0.85); }
+
+    .nav-arrow.prev-arrow { left: 4%; }
+    .nav-arrow.next-arrow { right: 4%; }
+
+    /* 인디케이터 점들 */
+    .indicators {
+      position: absolute;
+      bottom: 6%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.6cqw;
+      z-index: 30;
+      pointer-events: auto;
+    }
+
+    .ind-dot {
+      width: 0.6cqw;
+      height: 0.6cqw;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.18);
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.3s ease;
+    }
+
+    .ind-dot:hover {
+      background: rgba(0,0,0,0.4);
+    }
+
+    .ind-dot.active {
+      background: rgba(0,0,0,0.7);
+      transform: scale(1.3);
+    }
+
+    /* ===== DETAIL (preview) MODE ===== */
+    /* showcase의 텍스트/버튼/사이드 라벨은 숨기고 detail-view를 보여줌 */
+    body[data-mode="detail"] .showcase-kicker,
+    body[data-mode="detail"] .showcase-name,
+    body[data-mode="detail"] .showcase-rule,
+    body[data-mode="detail"] .showcase-desc,
+    body[data-mode="detail"] .explore-btn,
+    body[data-mode="detail"] .side-label,
+    body[data-mode="detail"] .indicators {
+      opacity: 0 !important;
+      pointer-events: none !important;
+      transition: opacity 0.4s ease;
+    }
+
+    /* detail 모드에서 양옆 카드는 사라짐 */
+    body[data-mode="detail"] .card.show-prev,
+    body[data-mode="detail"] .card.show-next {
+      opacity: 0 !important;
+      pointer-events: none !important;
+    }
+
+    /* 중앙 카드가 오른쪽으로 이동하면서 살짝 커짐 */
+    body[data-mode="detail"] .card.show-center {
+      left: 64% !important;
+      top: 55% !important;
+      width: 26% !important;
+      transform: translate(0, -50%) rotate(0deg) !important;
+      filter: drop-shadow(0 2.4cqw 3.6cqw rgba(0,0,0,0.28));
+      cursor: pointer;
+    }
+
+    body[data-mode="detail"] .card.show-center:hover {
+      transform: translate(0, -52%) rotate(0deg) !important;
+    }
+
+    /* 카드 아래쪽의 작은 next 라벨 */
+    .next-hint {
+      position: absolute;
+      left: 64%;
+      top: 90%;
+      transform: translate(0, 0);
+      font-size: 0.85cqw;
+      letter-spacing: 0.3em;
+      color: rgba(0,0,0,0.42);
+      text-transform: uppercase;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    body[data-mode="detail"] .next-hint {
+      opacity: 1;
+    }
+
+    /* 좌측 설명 패널 */
+    .detail-view {
+      position: absolute;
+      left: 6%;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 50%;
+      z-index: 7;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    body[data-mode="detail"] .detail-view {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .detail-kicker {
+      font-size: 1.1cqw;
+      letter-spacing: 0.32em;
+      color: rgba(0,0,0,0.55);
+      text-transform: uppercase;
+      margin-bottom: 1.4cqw;
+    }
+
+    .detail-name {
+      font-size: 8.4cqw;
+      line-height: 0.92;
+      font-weight: 400;
+      color: rgba(0,0,0,0.82);
+      letter-spacing: 0.01em;
+      margin-bottom: 0.6cqw;
+      text-shadow: 0 0.3cqw 1cqw rgba(255,255,255,0.4);
+    }
+
+    .detail-rule {
+      width: 3.6cqw;
+      height: 0.14cqw;
+      background: rgba(0,0,0,0.45);
+      margin: 1.4cqw 0 1.6cqw;
+    }
+
+    .detail-desc {
+      font-size: 1.35cqw;
+      line-height: 1.55;
+      color: rgba(0,0,0,0.62);
+      max-width: 32cqw;
+      margin-bottom: 2.2cqw;
+    }
+
+    .detail-actions {
+      display: flex;
+      align-items: center;
+      gap: 1cqw;
+    }
+
+    .learn-more-btn {
+      padding: 1cqw 2.6cqw;
+      border: none;
+      border-radius: 999px;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.2cqw;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.78);
+      background: rgba(255,255,255,0.92);
+      border: 0.1cqw solid rgba(255,255,255,0.7);
+      box-shadow:
+        0 1cqw 2.4cqw rgba(0,0,0,0.18),
+        inset 0 0.25cqw 0.6cqw rgba(255,255,255,0.6);
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    }
+
+    .learn-more-btn:hover {
+      transform: translateY(-0.3cqw);
+      box-shadow:
+        0 1.4cqw 3cqw rgba(0,0,0,0.22),
+        0 0 2.4cqw rgba(255,180,220,0.45);
+    }
+
+    .detail-mini-btn {
+      width: 2.6cqw;
+      height: 2.6cqw;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.45);
+      backdrop-filter: blur(10px);
+      border: 0.08cqw solid rgba(255,255,255,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.25s ease, background 0.25s ease;
+      box-shadow: 0 0.5cqw 1.2cqw rgba(0,0,0,0.1);
+    }
+
+    .detail-mini-btn:hover {
+      transform: scale(1.1);
+      background: rgba(255,255,255,0.7);
+    }
+
+    .detail-mini-btn svg {
+      width: 45%;
+      height: 45%;
+      stroke: rgba(0,0,0,0.65);
+      stroke-width: 2.2;
+      fill: none;
+    }
+
+    /* detail 모드에서 화살표는 위치 살짝 조정 */
+    body[data-mode="detail"] .nav-arrow {
+      opacity: 0.8;
+    }
+
+    .back-to-gallery,
+.detail-close {
+  position: absolute;
+  top: 7%;
+  padding: 0.7cqw 1.8cqw;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.4);
+  border: 0.08cqw solid rgba(255,255,255,0.55);
+  color: rgba(0,0,0,0.65);
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.05cqw;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  z-index: 35;
+  opacity: 0;
+  box-shadow:
+    0 0.7cqw 1.6cqw rgba(0,0,0,0.1),
+    inset 0 0.2cqw 0.5cqw rgba(255,255,255,0.55);
+  transition:
+    opacity 0.5s ease,
+    background 0.3s ease,
+    transform 0.3s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease;
+}
+
+.back-to-gallery {
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  min-width: 10cqw;
+  min-height: 3.2cqw;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.back-to-gallery::before {
+  content: none;
+}
+.detail-close {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.back-to-gallery:hover,
+.detail-close:hover {
+  background: rgba(255,255,255,0.7);
+  color: rgba(0,0,0,0.85);
+  box-shadow:
+    0 1cqw 2.2cqw rgba(0,0,0,0.14),
+    0 0 1.8cqw rgba(244,114,182,0.35),
+    inset 0 0.2cqw 0.5cqw rgba(255,255,255,0.65);
+}
+
+.back-to-gallery:hover { transform: translateX(-50%) translateY(-0.25cqw); }
+.detail-close:hover    { transform: translateX(-50%) translateY(-0.25cqw); }
+
+body[data-mode="showcase"] .back-to-gallery { opacity: 1; }
+body[data-mode="detail"]   .detail-close    { opacity: 1; }
+body[data-mode="detail"]   .back-to-gallery { opacity: 0; pointer-events: none; }
+
+    body[data-mode="showcase"] .back-to-gallery {
+      opacity: 1;
+    }
+
+    /* ===== 카드 오버레이 ===== */
+    .card-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255, 245, 250, 0.08);
+      backdrop-filter: blur(0.8cqw);
+      -webkit-backdrop-filter: blur(0.8cqw);
+      z-index: 80;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+    .card-overlay.show { opacity: 1; pointer-events: auto; }
+    .card-overlay.hidden { display: none; }
+
+    /* ===== 별빛 오버레이 ===== */
+    .star-overlay {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    .sparkle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0;
+      animation: sparkleTwinkle ease-in-out infinite,
+                 floatMove linear infinite;
+    }
+    .sparkle.small  { background: rgba(255, 255, 255, 1);     filter: blur(0.02cqw); }
+    .sparkle.medium { background: rgba(255, 245, 250, 0.95); filter: blur(0.04cqw); }
+    .sparkle.glow   { background: rgba(255, 230, 245, 0.6);  filter: blur(0.12cqw); }
+
+    @keyframes floatMove {
+      0%   { transform: translateY(0); }
+      100% { transform: translateY(-2cqw); }
+    }
+    @keyframes sparkleTwinkle {
+      0%   { opacity: 0.08; transform: scale(0.8); }
+      25%  { opacity: 0.45; transform: scale(1); }
+      50%  { opacity: 0.9;  transform: scale(1.15); }
+      75%  { opacity: 0.35; transform: scale(0.95); }
+      100% { opacity: 0.08; transform: scale(0.8); }
+    }
+
+    /* ===== 사운드 버튼 ===== */
+    .sound-wave-btn {
+        position: absolute;
+
+  top: clamp(12px, 2.5vh, 40px);
+  right: clamp(12px, 2.5vw, 40px);
+
+  width: clamp(36px, 4.5cqw, 70px);
+  height: clamp(36px, 4.5cqw, 70px);
+      padding: 0;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .sound-wave-btn:hover { transform: scale(1.06); }
+
+    .sound-wave-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+      filter:
+        drop-shadow(0 0 0.5cqw rgba(255,255,255,0.28))
+        drop-shadow(0 0 1.2cqw rgba(255,120,220,0.18));
+    }
+
+    .wave-path {
+      fill: none;
+      stroke: url(#waveGradient);
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      transform-origin: 50% 50%;
+    }
+
+    .sound-wave-btn.is-paused .wave-path {
+      animation: none;
+      opacity: 0.3;
+      filter: blur(0.015cqw);
+    }
+    .sound-wave-btn.is-playing .wave-path { filter: blur(0.01cqw); }
+
+    .wave-1 { opacity: 1; }
+    .wave-2 { opacity: 0.8; }
+    .wave-3 { opacity: 0.55; }
+    .wave-4 { opacity: 0.35; }
+
+    .sound-wave-btn.is-playing .wave-1 { animation: wave1 1.4s ease-in-out infinite; }
+    .sound-wave-btn.is-playing .wave-2 { animation: wave2 1.9s ease-in-out infinite reverse; }
+    .sound-wave-btn.is-playing .wave-3 { animation: wave3 2.5s ease-in-out infinite; }
+    .sound-wave-btn.is-playing .wave-4 { animation: wave4 3.1s ease-in-out infinite reverse; }
+
+    @keyframes wave1 { 0%,100% { transform: scale(0.78) rotate(0deg); stroke-width: 1.6; } 50% { transform: scale(0.96) rotate(8deg);  stroke-width: 2.4; } }
+    @keyframes wave2 { 0%,100% { transform: scale(0.9)  rotate(0deg); stroke-width: 1.5; } 50% { transform: scale(1.08) rotate(-7deg); stroke-width: 2.2; } }
+    @keyframes wave3 { 0%,100% { transform: scale(1.04) rotate(0deg); stroke-width: 1.4; } 50% { transform: scale(1.2)  rotate(6deg);  stroke-width: 2; } }
+    @keyframes wave4 { 0%,100% { transform: scale(1.2)  rotate(0deg); stroke-width: 1.2; } 50% { transform: scale(1.34) rotate(-5deg); stroke-width: 1.8; } }
+
+    /* ===== 트랜지션 ===== */
+    #transition {
+      position: fixed;
+      inset: 0;
+      background: black;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 9999;
+      transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    #transition.show { opacity: 1; }
+
+    /* ===== 메뉴 / 사이드 패널 ===== */
+    .menu-toggle {
+      position: absolute;
+      top: 4%;
+      left: 4%;
+      width: 3.2cqw;
+      height: 3.2cqw;
+      min-width: 34px;
+      min-height: 34px;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.38cqw;
+      cursor: pointer;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 0.08cqw solid rgba(255,255,255,0.2);
+      padding: 0.7cqw;
+      transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+    }
+    .menu-toggle:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); transform: translateY(-1px); }
+    .menu-toggle span { display: block; width: 100%; height: 0.11cqw; min-height: 1.5px; border-radius: 999px; background: rgba(255,255,255,0.9); }
+
+    .side-panel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: min(28cqw, 25rem);
+      height: 100%;
+      z-index: 40;
+      padding: 2.2cqw 1.6cqw 1.6cqw;
+      background: linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.08) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 0.08cqw solid rgba(255,255,255,0.22);
+      box-shadow: 1cqw 0 3cqw rgba(0,0,0,0.08);
+      transform: translateX(-100%);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.25s ease;
+      border-radius: 1.6cqw;
+      overflow: hidden;
+    }
+    .side-panel.show { transform: translateX(0); opacity: 1; pointer-events: auto; }
+
+    .side-panel-header { position: relative; padding-right: 2.4cqw; margin-bottom: 1.5cqw; }
+    .side-panel-kicker { font-size: 0.72cqw; letter-spacing: 0.18em; color: rgba(0,0,0,0.45); margin-bottom: 0.45cqw; }
+    .side-panel-title { font-size: 2cqw; line-height: 1.05; font-weight: 500; color: rgba(0,0,0,0.7); }
+    .side-panel-close {
+      position: absolute; top: 0; right: 0; width: 2cqw; height: 2cqw; min-width: 28px; min-height: 28px;
+      border: none; border-radius: 50%; background: rgba(255,255,255,0.16);
+      color: rgba(0,0,0,0.6); font-size: 1.2cqw; cursor: pointer;
+    }
+    .side-panel-body { display: flex; flex-direction: column; gap: 1cqw; }
+    .note-block { display: flex; flex-direction: column; gap: 0.72cqw; margin-bottom: 0.9cqw; }
+    .note-label { font-size: 0.78cqw; letter-spacing: 0.16em; color: rgba(0,0,0,0.48); text-transform: uppercase; margin-top: 0.15cqw; }
+    .note-input, .note-textarea {
+      width: 100%; border: 0.08cqw solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.22); color: rgba(0,0,0,0.72);
+      border-radius: 0.8cqw; padding: 1cqw 1cqw;
+      font-family: 'Cormorant Garamond', serif; font-size: 1cqw; outline: none;
+      backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    }
+    .note-input::placeholder, .note-textarea::placeholder { color: rgba(0,0,0,0.34); }
+    .note-textarea { min-height: 8.5cqw; resize: none; }
+    .note-save {
+      margin-top: 0.3cqw; align-self: flex-start; padding: 0.65cqw 1.1cqw;
+      border-radius: 999px; border: 0.08cqw solid rgba(255,255,255,0.26);
+      background: rgba(255,255,255,0.18); color: rgba(0,0,0,0.68);
+      font-family: 'Cormorant Garamond', serif; font-size: 0.95cqw; letter-spacing: 0.1em;
+      cursor: pointer; transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .note-save:hover { background: rgba(255,255,255,0.26); transform: translateY(-1px); }
+
+    .saved-note { margin-top: 1.2cqw; padding-top: 1cqw; border-top: 0.08cqw solid rgba(255,255,255,0.24); }
+    .saved-note-kicker { font-size: 0.72cqw; letter-spacing: 0.18em; color: rgba(0,0,0,0.42); margin-bottom: 0.5cqw; }
+    .saved-note-content { display: flex; flex-direction: column; gap: 0.8cqw; max-height: 14cqw; overflow-y: auto; padding-right: 0.25cqw; }
+
+    .saved-note-item {
+      padding: 0.85cqw 0.9cqw; border-radius: 0.9cqw;
+      background: rgba(255,255,255,0.16); border: 0.08cqw solid rgba(255,255,255,0.2);
+    }
+    .saved-note-stone { font-size: 1cqw; font-weight: 600; color: rgba(0,0,0,0.72); margin-bottom: 0.2cqw; }
+    .saved-note-meaning { font-size: 0.88cqw; color: rgba(0,0,0,0.5); margin-bottom: 0.45cqw; letter-spacing: 0.04em; }
+    .saved-note-memo { font-size: 0.95cqw; line-height: 1.45; color: rgba(0,0,0,0.66); white-space: pre-line; margin-bottom: 0.7cqw; }
+    .saved-note-delete {
+      border: none; background: rgba(255,255,255,0.22); color: rgba(0,0,0,0.58);
+      font-family: 'Cormorant Garamond', serif; font-size: 0.82cqw;
+      padding: 0.35cqw 0.7cqw; border-radius: 999px; cursor: pointer; transition: background 0.2s ease;
+    }
+    .saved-note-delete:hover { background: rgba(255,255,255,0.32); }
+    .empty-note { color: rgba(0,0,0,0.42); font-size: 0.95cqw; line-height: 1.4; }
+
+    .saved-note-content::-webkit-scrollbar { width: 0.42cqw; min-width: 6px; }
+    .saved-note-content::-webkit-scrollbar-track { background: rgba(255,255,255,0.08); border-radius: 999px; }
+    .saved-note-content::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgba(255,255,255,0.72) 0%, rgba(244,114,182,0.34) 100%);
+      border-radius: 999px; border: 0.06cqw solid rgba(255,255,255,0.16);
+    }
+    .saved-note-content { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.72) rgba(255,255,255,0.08); }
+    .note-textarea::-webkit-scrollbar { width: 0.38cqw; min-width: 6px; }
+    .note-textarea::-webkit-scrollbar-track { background: rgba(255,255,255,0.07); border-radius: 999px; }
+    .note-textarea::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgba(255,255,255,0.68) 0%, rgba(167,139,250,0.3) 100%);
+      border-radius: 999px;
+    }
+
+    .side-panel-screen.hidden { display: none; }
+    .menu-group-title { font-size: 0.78cqw; letter-spacing: 0.16em; color: rgba(0,0,0,0.42); margin-bottom: 0.9cqw; text-transform: uppercase; }
+    .menu-item {
+      width: 100%; text-align: left; border: none; background: rgba(255,255,255,0.16);
+      color: rgba(0,0,0,0.68); font-family: 'Cormorant Garamond', serif; font-size: 1.08cqw;
+      padding: 0.95cqw 1cqw; border-radius: 0.9cqw; margin-bottom: 0.7cqw; cursor: pointer;
+      border: 0.08cqw solid rgba(255,255,255,0.2); transition: background 0.22s ease, transform 0.22s ease;
+    }
+    .menu-item:hover { background: rgba(255,255,255,0.24); transform: translateX(2px); }
+    .back-link {
+      border: none; background: transparent; color: rgba(0,0,0,0.58);
+      font-family: 'Cormorant Garamond', serif; font-size: 0.95cqw;
+      margin-bottom: 1cqw; cursor: pointer; padding: 0;
+    }
+    .back-link:hover { color: rgba(0,0,0,0.78); }
+
+    @media (max-width: 900px) {
+      .menu-toggle { width: 38px; height: 38px; padding: 8px; gap: 4px; }
+      .menu-toggle span { height: 2px; }
+      .side-panel { width: min(78vw, 22rem); padding: 1.2rem 1rem 1rem; }
+      .side-panel-kicker, .note-label, .saved-note-kicker { font-size: 0.72rem; }
+      .side-panel-title { font-size: 1.6rem; }
+      .note-input, .note-textarea, .saved-note-content { font-size: 0.95rem; }
+      .note-save { font-size: 0.82rem; padding: 0.55rem 0.95rem; }
+      .side-panel-close { width: 28px; height: 28px; font-size: 1rem; }
+      .menu-group-title { font-size: 0.72rem; }
+      .menu-item, .back-link { font-size: 0.95rem; }
+    }
+  
+    /* ===== Photo Booth Floating Button ===== */
+    .photo-booth-btn{
+  position: fixed;
+  right: 2.5%;
+  bottom: 1.5%;
+
+  width: 16%;
+  height: 5%;
+
+  border-radius: 999px;
+
+  background: rgba(255,255,255,0.32);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  border: 1px solid rgba(255,255,255,0.55);
+
+  display: flex;
+  align-items: center;
+
+  padding: 0 1.2%;
+  gap: 4%;
+
+  text-decoration: none;
+  color: #70727c;
+
+  z-index: 99999;
+
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.12),
+    inset 0 1px 0 rgba(255,255,255,0.45);
+}
+
+    .photo-booth-btn:hover {
+      transform: translateY(-4px);
+      background: rgba(255,255,255,.38);
+    }
+
+   .photo-icon{
+  width: 12%;
+  aspect-ratio: 1/1;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: rgba(255,255,255,0.4);
+  border: 1px solid rgba(255,255,255,0.4);
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  font-size: 0.8cqw;
+}
+.photo-text{
+  flex: 1;
+
+  display:flex;
+  align-items:center;
+
+  gap: 4%;
+
+  white-space: nowrap;
+}
+.photo-text span {
+  display: block;
+  font-size: 0.4cqw;
+  letter-spacing: 0.18em;
+  flex-shrink:0;
+}
+
+.photo-text strong {
+  display: block;
+  font-size: 0.9cqw;
+  font-weight: 500;
+  letter-spacing: .05em;
+  flex-shrink:0;
+}
+
+.photo-arrow {
+  margin-left: 4%;
+  flex-shrink:0;
+  font-size: 0.9cqw;
+}
+
+    @media (max-width: 900px) {
+      .photo-booth-btn {
+        width: 36%;
+        height: 6%;
+        right: 3.5%;
+        bottom: 3%;
+        min-width: 150px;
+        min-height: 48px;
+      }
+
+      .photo-icon {
+        font-size: 0.9rem;
+      }
+
+      .photo-text span {
+        font-size: 0.45rem;
+      }
+
+      .photo-text strong {
+        font-size: 0.95rem;
+      }
+
+      .photo-arrow {
+        font-size: 1rem;
+      }
+    }
+
+  </style>
+</head>
+<body data-mode="fan">
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.74/build/spline-viewer.js"></script>
+  <div id="transition"></div>
+
+  <audio id="bgm" loop>
+    <source src="메인 화면 소리.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="hover-sfx" preload="auto">
+    <source src="카드 호버.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="card-open-sfx" preload="auto">
+    <source src="카드 내밈.mp3" type="audio/mpeg">
+  </audio>
+  <audio id="card-close-sfx" preload="auto">
+    <source src="카드 취소.mp3" type="audio/mpeg">
+  </audio>
+
+  <button id="sound-btn" class="sound-wave-btn" aria-label="Toggle sound">
+    <svg class="sound-wave-svg" viewBox="0 0 120 120" aria-hidden="true">
+      <defs>
+        <linearGradient id="waveGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#fde68a"/>
+          <stop offset="55%" stop-color="#f472b6"/>
+          <stop offset="100%" stop-color="#a78bfa"/>
+        </linearGradient>
+      </defs>
+      <path class="wave-path wave-1" d="M60,18 C74,18 84,24 91,34 C99,45 102,56 101,68 C100,82 93,94 81,101 C69,108 54,109 42,104 C30,99 21,89 18,76 C15,63 17,49 24,38 C31,27 44,19 60,18Z"/>
+      <path class="wave-path wave-2" d="M60,18 C74,18 84,24 91,34 C99,45 102,56 101,68 C100,82 93,94 81,101 C69,108 54,109 42,104 C30,99 21,89 18,76 C15,63 17,49 24,38 C31,27 44,19 60,18Z"/>
+      <path class="wave-path wave-3" d="M60,18 C74,18 84,24 91,34 C99,45 102,56 101,68 C100,82 93,94 81,101 C69,108 54,109 42,104 C30,99 21,89 18,76 C15,63 17,49 24,38 C31,27 44,19 60,18Z"/>
+      <path class="wave-path wave-4" d="M60,18 C74,18 84,24 91,34 C99,45 102,56 101,68 C100,82 93,94 81,101 C69,108 54,109 42,104 C30,99 21,89 18,76 C15,63 17,49 24,38 C31,27 44,19 60,18Z"/>
+    </svg>
+  </button>
+
+  <div class="spline-bg">
+    <spline-viewer url="https://prod.spline.design/l-sCIePY0F0pH5lN/scene.splinecode"></spline-viewer>
+  </div>
+
+  <div class="star-overlay"></div>
+
+  <div id="card-overlay" class="card-overlay hidden"></div>
+
+  <div class="game-container">
+    <!-- 메뉴 토글 -->
+    <div class="menu-toggle" id="menuToggle" aria-label="Open notes panel" role="button" tabindex="0">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+    <!-- 사이드 패널 -->
+    <div class="side-panel" id="sidePanel">
+      <div class="side-panel-header">
+        <div class="side-panel-kicker">ARCHIVE</div>
+        <h2 class="side-panel-title">Shared Space</h2>
+        <button class="side-panel-close" id="sidePanelClose" aria-label="Close panel">×</button>
+      </div>
+
+      <div class="side-panel-screen menu-screen" id="menuScreen">
+        <div class="menu-group-title">Explore</div>
+        <button class="menu-item" onclick="window.location.href='The Star I Am.html'">The Star I Am</button>
+        <button class="menu-item" onclick="window.location.href='gem collection.html'">Birthstone Collection</button>
+        <button class="menu-item" onclick="window.location.href='jemfourphoto_gem1.html'">Birthstone Photo</button>
+        <button class="menu-item" id="openNotesView">Birthstone Notes</button>
+      </div>
+
+      <div class="side-panel-screen notes-screen hidden" id="notesScreen">
+        <button class="back-link" id="backToMenu">← Back</button>
+
+        <div class="note-block">
+          <label class="note-label" for="stoneName">Birthstone</label>
+          <input id="stoneName" class="note-input" type="text" placeholder="Write the stone name" />
+        </div>
+        <div class="note-block">
+          <label class="note-label" for="stoneMeaning">Meaning</label>
+          <input id="stoneMeaning" class="note-input" type="text" placeholder="Truth, friendship, protection..." />
+        </div>
+        <div class="note-block">
+          <label class="note-label" for="stoneMemo">Memo</label>
+          <textarea id="stoneMemo" class="note-textarea" placeholder="Write a note about your shared birthstone..."></textarea>
+        </div>
+        <button class="note-save" id="noteSave">Save Note</button>
+
+        <div class="saved-note" id="savedNote">
+          <div class="saved-note-kicker">SAVED NOTES</div>
+          <div class="saved-note-content" id="savedNoteContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 상단 라벨 -->
+    <div class="top-title">Explore Your Birthstone</div>
+    <div class="big-title">THE GEM I AM</div>
+    <div class="center-copy">Unveil your birthstone, and experience the story of your beginning.</div>
+
+    <!-- Start CTA (초기 화면) -->
+    <div class="start-cta" id="startCta">
+      <button class="start-btn" id="startBtn">Start</button>
+      <div class="start-hint">Discover your stone</div>
+    </div>
+
+    <!-- 12개 카드 -->
+    <div class="card c1"  data-link="Garnet_view.html"        data-name="GARNET"      data-month="January"   data-meaning="Trust · Protection"        data-desc="A deep crimson stone of devotion and steady courage. Garnet is said to ignite passion and guard the heart of those who carry it.">
+      <img src="./가넷2.jpg" class="card-img" />
+      <div class="card-text">Garnet<br>January</div>
+    </div>
+    <div class="card c2"  data-link="Amethyst_view.html"                          data-name="AMETHYST"    data-month="February"  data-meaning="Clarity · Calm"            data-desc="A violet hush in stone. Amethyst is the keeper of clear thoughts, soft sleep, and the quiet kind of wisdom that grows in stillness.">
+      <img src="./자수정2.jpg" class="card-img" />
+      <div class="card-text">Amethyst<br>February</div>
+    </div>
+    <div class="card c3"  data-link="Aquamarine_view.html"                          data-name="AQUAMARINE"  data-month="March"     data-meaning="Serenity · Courage"        data-desc="The color of morning sea light. Aquamarine carries calm across long journeys and reminds the heart that depth and softness can live together.">
+      <img src="./아쿠아마린2.jpg" class="card-img" />
+      <div class="card-text">Aquamarine<br>March</div>
+    </div>
+    <div class="card c4"  data-link="Diamond_view.html"                          data-name="DIAMOND"     data-month="April"     data-meaning="Eternity · Light"          data-desc="Born of pressure and time. The diamond gathers every small light and gives it back, a quiet promise of things that do not break.">
+      <img src="./다이아몬드2.jpg" class="card-img" />
+      <div class="card-text">Diamond<br>April</div>
+    </div>
+    <div class="card c5"  data-link="Emerald_view.html"                          data-name="EMERALD"     data-month="May"       data-meaning="Hope · Renewal"            data-desc="A green so deep it remembers spring. Emerald is the stone of fresh beginnings and a love that grows back after every winter.">
+      <img src="./에메랄드2.jpg" class="card-img" />
+      <div class="card-text">Emerald<br>May</div>
+    </div>
+    <div class="card c6"  data-link="Pearl_view.html"                          data-name="PEARL"       data-month="June"      data-meaning="Innocence · Grace"         data-desc="The only gem made by a living thing. Pearl is patience turned luminous — a soft, slow answer to the world.">
+      <img src="./진주2.jpg" class="card-img" />
+      <div class="card-text">Pearl<br>June</div>
+    </div>
+    <div class="card c7"  data-link="Ruby_view.html"                          data-name="RUBY"        data-month="July"      data-meaning="Passion · Vitality"        data-desc="A heart caught in stone. Ruby gives back warmth on the coldest days, a quiet flame that refuses to be put out.">
+      <img src="./루비2.jpg" class="card-img" />
+      <div class="card-text">Ruby<br>July</div>
+    </div>
+    <div class="card c8"  data-link="Peridot_view.html"                          data-name="PERIDOT"     data-month="August"    data-meaning="Light · Healing"           data-desc="A small piece of summer afternoon. Peridot lifts the spirit and softens the edges of a long, bright day.">
+      <img src="./페리도트2.jpg" class="card-img" />
+      <div class="card-text">Peridot<br>August</div>
+    </div>
+    <div class="card c9"  data-link="Sapphire_view.html"                          data-name="SAPPHIRE"    data-month="September" data-meaning="Wisdom · Loyalty"          data-desc="The color of a quiet sky after rain. Sapphire holds promises and the kind of love that learns the long shape of a life.">
+      <img src="./사파이어2.jpg" class="card-img" />
+      <div class="card-text">Sapphire<br>September</div>
+    </div>
+    <div class="card c10" data-link="Opal_view.html"                          data-name="OPAL"        data-month="October"   data-meaning="Imagination · Wonder"      data-desc="A stone that holds many lights at once. Opal is the soft proof that a single heart can carry a whole sky of color.">
+      <img src="./화이트오팔2.jpg" class="card-img" />
+      <div class="card-text">Opal<br>October</div>
+    </div>
+    <div class="card c11" data-link="Topaz_view.html"                          data-name="TOPAZ"       data-month="November"  data-meaning="Warmth · Friendship"       data-desc="Honey caught in glass. Topaz is the stone of close friendships and the quiet courage to speak the truth gently.">
+      <img src="./토파즈2.jpg" class="card-img" />
+      <div class="card-text">Topaz<br>November</div>
+    </div>
+    <div class="card c12" data-link="Turquoise_view.html"                          data-name="TURQUOISE"   data-month="December"  data-meaning="Protection · Peace"        data-desc="Sky and earth, held in the same breath. Turquoise has been worn for thousands of years as a small piece of safe sky to carry close.">
+      <img src="./터키석2.jpg" class="card-img" />
+      <div class="card-text">Turquoise<br>December</div>
+    </div>
+
+    <!-- Showcase 텍스트 영역 -->
+    <div class="showcase-view" id="showcaseView">
+      <button class="back-to-gallery" id="backToGallery">← Gallery</button>
+
+      <div class="showcase-kicker" id="showcaseKicker">BIRTHSTONE</div>
+      <div class="showcase-name" id="showcaseName">GARNET</div>
+      <div class="showcase-rule"></div>
+      <div class="showcase-desc" id="showcaseDesc">A deep crimson stone of devotion and steady courage.</div>
+      
+
+      <div class="side-label prev" id="sideLabelPrev">TURQUOISE</div>
+      <div class="side-label next" id="sideLabelNext">AMETHYST</div>
+
+      <button class="nav-arrow prev-arrow" id="prevArrow" aria-label="Previous stone">
+        <svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
+      </button>
+      <button class="nav-arrow next-arrow" id="nextArrow" aria-label="Next stone">
+        <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+      </button>
+
+      <div class="indicators" id="indicators"></div>
+    </div>
+
+    <!-- Detail Preview View (카드 누르면 등장) -->
+    <div class="detail-view" id="detailView">
+      <div class="detail-kicker" id="detailKicker">JANUARY BIRTHSTONE</div>
+      <h1 class="detail-name" id="detailName">GARNET</h1>
+      <div class="detail-rule"></div>
+      <p class="detail-desc" id="detailDesc">A deep crimson stone of devotion and steady courage.</p>
+      <div class="detail-actions">
+        <button class="learn-more-btn" id="learnMoreBtn">Learn More</button>
+        <button class="detail-mini-btn" id="detailPrevMini" aria-label="Previous">
+          <svg viewBox="0 0 24 24"><polyline points="15 6 9 12 15 18"/></svg>
+        </button>
+        <button class="detail-mini-btn" id="detailNextMini" aria-label="Next">
+          <svg viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="next-hint" id="nextHint">NEXT · AMETHYST</div>
+    <button class="detail-close" id="detailClose">← Back</button>
+  </div>
+
+  <a href="jemfourphoto_gem1.html" class="photo-booth-btn">
+    <div class="photo-icon">⊞</div>
+    <div class="photo-text">
+      <span>FOUR CUT</span>
+      <strong>PHOTO BOOTH</strong>
+    </div>
+    <div class="photo-arrow">→</div>
+  </a>
+
+  <script>
+    /* ========== 기본 요소 ========== */
+    const bgm = document.getElementById("bgm");
+    const btn = document.getElementById("sound-btn");
+    const hoverSfx = document.getElementById("hover-sfx");
+    const cardOpenSfx = document.getElementById("card-open-sfx");
+    const closeSfx = document.getElementById("card-close-sfx");
+    const overlay = document.getElementById("card-overlay");
+
+    const cards = Array.from(document.querySelectorAll(".card"));
+    const startBtn = document.getElementById("startBtn");
+    const startCta = document.getElementById("startCta");
+    const bigTitle = document.querySelector(".big-title");
+    const centerCopy = document.querySelector(".center-copy");
+    const topTitle = document.querySelector(".top-title");
+
+    const showcaseKicker = document.getElementById("showcaseKicker");
+    const showcaseName = document.getElementById("showcaseName");
+    const showcaseDesc = document.getElementById("showcaseDesc");
+    const sideLabelPrev = document.getElementById("sideLabelPrev");
+    const sideLabelNext = document.getElementById("sideLabelNext");
+    const prevArrow = document.getElementById("prevArrow");
+    const nextArrow = document.getElementById("nextArrow");
+    const indicators = document.getElementById("indicators");
+    const backToGallery = document.getElementById("backToGallery");
+
+    /* Detail preview elements */
+    const detailKicker = document.getElementById("detailKicker");
+    const detailName = document.getElementById("detailName");
+    const detailDesc = document.getElementById("detailDesc");
+    const learnMoreBtn = document.getElementById("learnMoreBtn");
+    const detailPrevMini = document.getElementById("detailPrevMini");
+    const detailNextMini = document.getElementById("detailNextMini");
+    const detailClose = document.getElementById("detailClose");
+    const nextHint = document.getElementById("nextHint");
+
+    let isPlaying = false;
+    let currentIndex = 0;
+    let isAnimating = false;
+
+    /* ========== 사운드 토글 ========== */
+    function setWaveState(playing) {
+      btn.classList.toggle("is-playing", playing);
+      btn.classList.toggle("is-paused", !playing);
+    }
+    setWaveState(false);
+
+    document.addEventListener("click", () => {
+      if (!isPlaying) {
+        bgm.volume = 0.15;
+        bgm.play().catch(() => {});
+        isPlaying = true;
+        setWaveState(true);
+      }
+    }, { once: true });
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (bgm.paused) {
+        bgm.play().catch(() => {});
+        isPlaying = true;
+        setWaveState(true);
+      } else {
+        bgm.pause();
+        isPlaying = false;
+        setWaveState(false);
+      }
+    });
+
+    function playHoverSound() { hoverSfx.currentTime = 0; hoverSfx.volume = 0.35; hoverSfx.play().catch(() => {}); }
+    function playCardOpenSound() { cardOpenSfx.currentTime = 0; cardOpenSfx.volume = 0.45; cardOpenSfx.play().catch(() => {}); }
+    function playCloseSound() { closeSfx.currentTime = 0; closeSfx.volume = 1; closeSfx.play().catch(() => {}); }
+
+    /* ========== 카드 호버 (fan 모드에서만) ========== */
+    cards.forEach((card) => {
+      card.addEventListener("mouseenter", () => {
+        if (document.body.dataset.mode !== "fan") return;
+        playHoverSound();
+      });
+    });
+
+    /* ========== Start 버튼 → gathering → showcase ========== */
+    startBtn.addEventListener("click", () => {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      playCardOpenSound();
+
+      // 1. CTA & 큰 타이틀 페이드
+      startCta.style.opacity = "0";
+      startCta.style.transform = "translateX(-50%) translateY(1cqw)";
+      setTimeout(() => { startCta.style.display = "none"; }, 600);
+
+      bigTitle.style.opacity = "0";
+      bigTitle.style.transform = "translate(-50%, -55%)";
+      centerCopy.style.opacity = "0";
+
+      // 각 카드에 살짝 다른 회전 적용해서 자연스러운 스택
+      cards.forEach((card, i) => {
+        const rot = (i - cards.length / 2) * 1.6;
+        card.style.setProperty("--gather-rot", `${rot}deg`);
+        card.style.zIndex = 3 + i;
+      });
+
+      // 2. gathering 모드 → 카드들 중앙으로 모임
+      requestAnimationFrame(() => {
+        document.body.dataset.mode = "gathering";
+      });
+
+      // 3. 1.1초 후 showcase 모드로 전환
+      setTimeout(() => {
+        document.body.dataset.mode = "showcase";
+        currentIndex = 0;
+        applyShowcase(currentIndex, true);
+        isAnimating = false;
+      }, 1100);
+    });
+
+    /* ========== Showcase 적용 ========== */
+    function applyShowcase(idx, instant = false) {
+  const total = cards.length;
+  const prevIdx = (idx - 1 + total) % total;
+  const nextIdx = (idx + 1) % total;
+
+  const farCards = cards.filter((_, farI) => {
+    return farI !== idx && farI !== prevIdx && farI !== nextIdx;
+  });
+
+  cards.forEach((card, i) => {
+    card.classList.remove("show-center", "show-prev", "show-next", "show-far");
+
+    card.style.left = "";
+    card.style.top = "";
+    card.style.width = "";
+    card.style.transform = "";
+    card.style.opacity = "";
+    card.style.filter = "";
+    card.style.zIndex = "";
+
+    if (i === idx) {
+      card.classList.add("show-center");
+      card.style.zIndex = 8;
+
+    } else if (i === prevIdx) {
+      card.classList.add("show-prev");
+      card.style.zIndex = 5;
+
+    } else if (i === nextIdx) {
+      card.classList.add("show-next");
+      card.style.zIndex = 5;
+
+    } else {
+      card.classList.add("show-far");
+
+      const farIndex = farCards.indexOf(card);
+      const totalFar = farCards.length;
+
+      const angle = 205 + (farIndex / (totalFar - 1)) * 130;
+      const radiusX = 34;
+      const radiusY = 28;
+
+      const x = 50 + Math.cos(angle * Math.PI / 180) * radiusX;
+      const y = 62 + Math.sin(angle * Math.PI / 180) * radiusY;
+
+      card.style.left = `${x}%`;
+      card.style.top = `${y}%`;
+      card.style.width = "11%";
+      card.style.opacity = "0.16";
+      card.style.filter = "blur(0.16cqw) saturate(75%)";
+      card.style.transform = `translate(-50%, -50%)`;
+      card.style.zIndex = 1;
+    }
+  });
+
+  const fadeEls = [showcaseKicker, showcaseName, showcaseDesc];
+
+  if (!instant) {
+    fadeEls.forEach(el => {
+      el.style.opacity = "0";
+      el.style.transform = el === showcaseName
+        ? "translate(-50%, -50%) translateY(0.6cqw)"
+        : "translateX(-50%) translateY(0.6cqw)";
+    });
+  }
+
+  const center = cards[idx];
+  const prev = cards[prevIdx];
+  const next = cards[nextIdx];
+
+  const delay = instant ? 0 : 250;
+
+  setTimeout(() => {
+    showcaseKicker.textContent = `${center.dataset.month.toUpperCase()} BIRTHSTONE`;
+    showcaseName.textContent = center.dataset.name;
+    showcaseDesc.textContent = center.dataset.desc;
+    sideLabelPrev.textContent = prev.dataset.name;
+    sideLabelNext.textContent = next.dataset.name;
+
+    detailKicker.textContent = `${center.dataset.month.toUpperCase()} BIRTHSTONE`;
+    detailName.textContent = center.dataset.name;
+    detailDesc.textContent = center.dataset.desc;
+    nextHint.textContent = `NEXT · ${next.dataset.name}`;
+
+    fadeEls.forEach(el => {
+      el.style.opacity = "1";
+      el.style.transform = el === showcaseName
+        ? "translate(-50%, -50%)"
+        : "translateX(-50%)";
+    });
+
+    document.querySelectorAll(".ind-dot").forEach((d, i) => {
+      d.classList.toggle("active", i === idx);
+    });
+  }, delay);
+}
+
+    /* ========== 인디케이터 생성 ========== */
+    cards.forEach((_, i) => {
+      const dot = document.createElement("div");
+      dot.className = "ind-dot" + (i === 0 ? " active" : "");
+      dot.addEventListener("click", () => {
+        if (document.body.dataset.mode !== "showcase" || isAnimating) return;
+        if (i === currentIndex) return;
+        currentIndex = i;
+        playHoverSound();
+        applyShowcase(currentIndex);
+      });
+      indicators.appendChild(dot);
+    });
+
+    /* ========== 네비게이션 ========== */
+    function go(direction) {
+      const mode = document.body.dataset.mode;
+      if ((mode !== "showcase" && mode !== "detail") || isAnimating) return;
+      isAnimating = true;
+      const total = cards.length;
+      currentIndex = (currentIndex + direction + total) % total;
+      playHoverSound();
+      applyShowcase(currentIndex);
+      setTimeout(() => { isAnimating = false; }, 700);
+    }
+
+    prevArrow.addEventListener("click", () => go(-1));
+    nextArrow.addEventListener("click", () => go(1));
+    detailPrevMini.addEventListener("click", () => go(-1));
+    detailNextMini.addEventListener("click", () => go(1));
+
+    document.addEventListener("keydown", (e) => {
+      const mode = document.body.dataset.mode;
+      if (mode === "showcase" || mode === "detail") {
+        if (e.key === "ArrowLeft")  go(-1);
+        if (e.key === "ArrowRight") go(1);
+      }
+      if (e.key === "Escape") {
+        if (mode === "detail") {
+          closeDetail();
+        } else if (mode === "showcase") {
+          backToGalleryFn();
+        }
+      }
+    });
+
+    /* 양옆 카드 클릭하면 그쪽으로 이동, 가운데는 detail 진입 */
+    cards.forEach((card) => {
+      card.addEventListener("click", () => {
+        const mode = document.body.dataset.mode;
+        if (mode === "showcase" && !isAnimating) {
+          if (card.classList.contains("show-prev")) go(-1);
+          else if (card.classList.contains("show-next")) go(1);
+          else if (card.classList.contains("show-center")) openDetail();
+        } else if (mode === "detail" && !isAnimating) {
+          if (card.classList.contains("show-center")) {
+            // detail 모드에서 카드 한번 더 누르면 LEARN MORE 동작
+            triggerNavigate();
+          }
+        }
+      });
+    });
+
+    /* ========== Detail Preview 진입 / 닫기 ========== */
+    function openDetail() {
+      if (isAnimating) return;
+      isAnimating = true;
+      playCardOpenSound();
+      document.body.dataset.mode = "detail";
+      setTimeout(() => { isAnimating = false; }, 700);
+    }
+
+    function closeDetail() {
+      if (isAnimating) return;
+      isAnimating = true;
+      playCloseSound();
+      document.body.dataset.mode = "showcase";
+      setTimeout(() => { isAnimating = false; }, 700);
+    }
+
+    detailClose.addEventListener("click", closeDetail);
+
+    
+
+    /* LEARN MORE = 실제 페이지 이동 */
+    learnMoreBtn.addEventListener("click", triggerNavigate);
+
+    /* ========== 실제 페이지로 이동 ========== */
+    function triggerNavigate() {
+      const card = cards[currentIndex];
+      const link = card.dataset.link;
+      if (!link) {
+        // 링크가 없으면 살짝 흔들어서 알림
+        detailName.animate(
+          [
+            { transform: "translateX(0)" },
+            { transform: "translateX(-0.6cqw)" },
+            { transform: "translateX(0.6cqw)" },
+            { transform: "translateX(0)" }
+          ],
+          { duration: 380 }
+        );
+        return;
+      }
+      const transition = document.getElementById("transition");
+      transition.classList.add("show");
+      playCardOpenSound();
+      setTimeout(() => {
+        window.location.href = link;
+      }, 800);
+    }
+
+    /* ========== Gallery로 돌아가기 ========== */
+    /* ========== Gallery로 돌아가기 ========== */
+function backToGalleryFn() {
+  if (isAnimating) return;
+  isAnimating = true;
+  playCloseSound();
+
+  // 1) 쇼케이스/뒤 배경 카드 상태 제거 + 인라인 스타일 초기화
+  cards.forEach((card, i) => {
+    card.classList.remove("show-center", "show-prev", "show-next", "show-far");
+
+    card.style.left = "";
+    card.style.top = "";
+    card.style.width = "";
+    card.style.transform = "";
+    card.style.opacity = "1";
+    card.style.filter = "none";
+    card.style.zIndex = 20 + i;
+
+    const rot = (i - 5.5) * 2;
+    card.style.setProperty("--gather-rot", `${rot}deg`);
+  });
+
+  // 2) 한 프레임 쉬고 중앙으로 모으기
+  requestAnimationFrame(() => {
+    document.body.dataset.mode = "returning";
+  });
+
+  startCta.style.display = "none";
+  bigTitle.style.opacity = "0";
+  centerCopy.style.opacity = "0";
+  topTitle.style.opacity = "0";
+
+  // 3) 중앙에 모였다가 fan으로 펼치기
+  setTimeout(() => {
+    document.body.dataset.mode = "fan";
+
+    // fan 모드 적용 후 인라인 스타일 완전 제거
+    requestAnimationFrame(() => {
+      cards.forEach(card => {
+        card.classList.remove("show-center", "show-prev", "show-next", "show-far");
+
+        card.style.left = "";
+        card.style.top = "";
+        card.style.width = "";
+        card.style.transform = "";
+        card.style.opacity = "";
+        card.style.filter = "";
+        card.style.zIndex = "";
+      });
+
+      startCta.style.display = "flex";
+      requestAnimationFrame(() => {
+        startCta.style.opacity = "1";
+        startCta.style.transform = "translateX(-50%)";
+      });
+
+      bigTitle.style.opacity = "";
+      bigTitle.style.transform = "";
+      centerCopy.style.opacity = "";
+      topTitle.style.opacity = "";
+    });
+
+    setTimeout(() => {
+      isAnimating = false;
+    }, 900);
+  }, 750);
+}
+
+    backToGallery.addEventListener("click", backToGalleryFn);
+
+    /* ========== 별빛 ========== */
+    const starOverlay = document.querySelector(".star-overlay");
+    function createSparkles(count = 110) {
+      if (!starOverlay) return;
+      starOverlay.innerHTML = "";
+      for (let i = 0; i < count; i++) {
+        const s = document.createElement("span");
+        const rand = Math.random();
+        let type = "small";
+        if (rand > 0.78 && rand <= 0.94) type = "medium";
+        if (rand > 0.94) type = "glow";
+        s.className = `sparkle ${type}`;
+        s.style.left = `${Math.random() * 100}%`;
+        s.style.top = `${Math.random() * 100}%`;
+        let size;
+        if (type === "small") size = Math.random() * 0.08 + 0.03;
+        else if (type === "medium") size = Math.random() * 0.16 + 0.08;
+        else size = Math.random() * 0.35 + 0.18;
+        s.style.width = `${size}cqw`;
+        s.style.height = `${size}cqw`;
+        s.style.animationDuration = `${Math.random() * 4 + 3}s, ${Math.random() * 10 + 10}s`;
+        s.style.animationDelay = `${Math.random() * 5}s`;
+        s.style.opacity = Math.random() * 0.8 + 0.2;
+        starOverlay.appendChild(s);
+      }
+    }
+    createSparkles(110);
+
+    /* ========== 빅 타이틀 더블클릭 → The Star I Am ========== */
+    bigTitle?.addEventListener("dblclick", () => {
+      const transition = document.getElementById("transition");
+      if (transition) {
+        transition.classList.add("show");
+        setTimeout(() => { window.location.href = "The Star I Am.html"; }, 700);
+      } else {
+        window.location.href = "The Star I Am.html";
+      }
+    });
+
+    /* ========== 메뉴 / 사이드 패널 ========== */
+    const menuToggle = document.getElementById("menuToggle");
+    const sidePanel = document.getElementById("sidePanel");
+    const sidePanelClose = document.getElementById("sidePanelClose");
+    const noteSave = document.getElementById("noteSave");
+    const stoneName = document.getElementById("stoneName");
+    const stoneMeaning = document.getElementById("stoneMeaning");
+    const stoneMemo = document.getElementById("stoneMemo");
+    const savedNoteContent = document.getElementById("savedNoteContent");
+    const menuScreen = document.getElementById("menuScreen");
+    const notesScreen = document.getElementById("notesScreen");
+    const openNotesView = document.getElementById("openNotesView");
+    const backToMenu = document.getElementById("backToMenu");
+
+    menuToggle.addEventListener("click", () => sidePanel.classList.toggle("show"));
+    sidePanelClose.addEventListener("click", () => sidePanel.classList.remove("show"));
+
+    const NOTES_STORAGE_KEY = "birthstoneNotes";
+    function getSavedNotes() { try { return JSON.parse(localStorage.getItem(NOTES_STORAGE_KEY)) || []; } catch { return []; } }
+    function saveNotesToStorage(notes) { localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(notes)); }
+    function renderSavedNotes() {
+      const notes = getSavedNotes();
+      if (!notes.length) {
+        savedNoteContent.innerHTML = `<div class="empty-note">Nothing saved yet.</div>`;
+        return;
+      }
+      savedNoteContent.innerHTML = notes.map((note, index) => `
+        <div class="saved-note-item">
+          <div class="saved-note-stone">${note.name || "-"}</div>
+          <div class="saved-note-meaning">${note.meaning || "-"}</div>
+          <div class="saved-note-memo">${note.memo || "-"}</div>
+          <button class="saved-note-delete" data-note-index="${index}">Delete</button>
+        </div>
+      `).join("");
+    }
+
+    noteSave.addEventListener("click", () => {
+      const name = stoneName.value.trim();
+      const meaning = stoneMeaning.value.trim();
+      const memo = stoneMemo.value.trim();
+      if (!name && !meaning && !memo) return;
+      const notes = getSavedNotes();
+      notes.unshift({ name, meaning, memo });
+      saveNotesToStorage(notes);
+      renderSavedNotes();
+      stoneName.value = ""; stoneMeaning.value = ""; stoneMemo.value = "";
+    });
+
+    savedNoteContent.addEventListener("click", (e) => {
+      const deleteBtn = e.target.closest(".saved-note-delete");
+      if (!deleteBtn) return;
+      const index = Number(deleteBtn.dataset.noteIndex);
+      const notes = getSavedNotes();
+      notes.splice(index, 1);
+      saveNotesToStorage(notes);
+      renderSavedNotes();
+    });
+
+    renderSavedNotes();
+    openNotesView.addEventListener("click", () => {
+      menuScreen.classList.add("hidden");
+      notesScreen.classList.remove("hidden");
+    });
+    backToMenu.addEventListener("click", () => {
+      notesScreen.classList.add("hidden");
+      menuScreen.classList.remove("hidden");
+    });
+  </script>
+</body>
+</html>
