@@ -1,0 +1,2827 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Jost:wght@200;300;400;500&display=swap"
+    rel="stylesheet">
+  <link rel="preconnect" href="https://prod.spline.design" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="preload" href="https://prod.spline.design/o0jmMnJAPw-0IMuy/scene.splinecode" as="fetch"
+    crossorigin="anonymous" fetchpriority="high">
+
+  <title>Emerald · 에메랄드</title>
+
+  <style>
+    /* ===== RESET ===== */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    .viewport {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* ===== SPLINE STAGE (always fullscreen behind everything) ===== */
+    .spline-stage {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      overflow: hidden;
+    }
+
+    spline-viewer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+      opacity: 0;
+      transform: scale(1.02);
+      transition: opacity 1.8s ease, transform 1.8s ease;
+    }
+
+    spline-viewer.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .poster-image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 2;
+      object-fit: cover;
+      transform: scale(1.2) translateX(2%);
+      opacity: 1;
+      transition: opacity 1.2s ease, transform 1.2s ease;
+    }
+
+    .poster-image.hide {
+      opacity: 0;
+      transform: scale(1);
+    }
+
+    /* ===== PARTICLES ===== */
+    .particles {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+      width: var(--size);
+      height: var(--size);
+      background: radial-gradient(circle, var(--color) 0%, transparent 70%);
+      box-shadow: 0 0 calc(var(--size) * 2) var(--color);
+      animation: floatUp linear infinite, flicker ease-in-out infinite;
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translate3d(0, 3vh, 0) scale(0.9);
+        opacity: 0;
+      }
+
+      15% {
+        opacity: 1;
+      }
+
+      50% {
+        transform: translate3d(1vw, -8vh, 0) scale(1);
+      }
+
+      100% {
+        transform: translate3d(-1vw, -18vh, 0) scale(0.85);
+        opacity: 0;
+      }
+    }
+
+    @keyframes flicker {
+
+      0%,
+      100% {
+        opacity: 0.15;
+      }
+
+      50% {
+        opacity: 0.95;
+      }
+    }
+
+    /* ===== LOADING OVERLAY (identical to original) ===== */
+    .loading-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 50% 45%, rgba(20, 120, 85, 0.14), transparent 42%),
+        radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.035), transparent 50%);
+      opacity: 1;
+      transition: opacity 1.2s ease, visibility 1.2s ease;
+    }
+
+    .loading-overlay.hide {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .loading-orb {
+      position: relative;
+      width: 4.4rem;
+      height: 4.4rem;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04) 56%, rgba(255, 255, 255, 0.01));
+      box-shadow: 0 0 28px rgba(120, 255, 205, 0.16), inset 0 0 14px rgba(255, 255, 255, 0.04);
+      animation: orbSpin 5.5s linear infinite, orbFloat 4.4s ease-in-out infinite;
+    }
+
+    .loading-orb::before {
+      content: "";
+      position: absolute;
+      inset: 0.5rem;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .orb-dot {
+      position: absolute;
+      width: 0.42rem;
+      height: 0.42rem;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffffff, rgba(120, 255, 205, 0.92) 46%, rgba(120, 255, 205, 0.08));
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.85), 0 0 20px rgba(80, 235, 180, 0.45);
+    }
+
+    .orb-dot-1 {
+      top: -0.12rem;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    .orb-dot-2 {
+      right: 0.4rem;
+      bottom: 0.8rem;
+    }
+
+    .orb-dot-3 {
+      left: 0.45rem;
+      bottom: 0.72rem;
+    }
+
+    @keyframes orbSpin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes orbFloat {
+
+      0%,
+      100% {
+        translate: 0 0;
+      }
+
+      50% {
+        translate: 0 -10px;
+      }
+    }
+
+    .loading-copy-box {
+      padding: 1rem 1.35rem;
+      min-width: min(86vw, 34rem);
+      max-width: min(94vw, 44rem);
+      border-radius: 1.1rem;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(8, 8, 10, 0.24);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 0 24px rgba(0, 0, 0, 0.22), inset 0 0 16px rgba(255, 255, 255, 0.03);
+      text-align: center;
+      animation: boxFloat 4.8s ease-in-out infinite;
+    }
+
+    .loading-kicker {
+      margin-bottom: 0.45rem;
+      font-size: clamp(0.62rem, 0.8vw, 0.72rem);
+      letter-spacing: 0.24em;
+      color: rgba(180, 255, 225, 0.48);
+    }
+
+    .loading-copy {
+      position: relative;
+      height: 1.8em;
+      color: rgba(255, 255, 255, 0.92);
+      font-size: clamp(0.98rem, 1.45vw, 1.22rem);
+      line-height: 1.45;
+      letter-spacing: 0.04em;
+      text-shadow: 0 0 16px rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .loading-copy span {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transform: translateY(8px);
+      animation: loadingSentence 8s infinite;
+    }
+
+    .loading-copy span:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .loading-copy span:nth-child(2) {
+      animation-delay: 1.33s;
+    }
+
+    .loading-copy span:nth-child(3) {
+      animation-delay: 2.66s;
+    }
+
+    .loading-copy span:nth-child(4) {
+      animation-delay: 4s;
+    }
+
+    .loading-copy span:nth-child(5) {
+      animation-delay: 5.33s;
+    }
+
+    .loading-copy span:nth-child(6) {
+      animation-delay: 6.66s;
+    }
+
+    @keyframes loadingSentence {
+      0% {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      8% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      15% {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      23% {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+    }
+
+    @keyframes boxFloat {
+
+      0%,
+      100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+
+    /* ===== TAROT CARDS (identical to original) ===== */
+    .tarot-stage {
+      position: absolute;
+      left: 50%;
+      bottom: 8%;
+      transform: translateX(-50%);
+      z-index: 9998;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(1rem, 2.5vw, 2.2rem);
+      width: max-content;
+      perspective: 900px;
+    }
+
+    .tarot-card {
+      position: relative;
+      transform-style: preserve-3d;
+      -webkit-transform-style: preserve-3d;
+      width: clamp(7rem, 10vw, 10rem);
+      height: clamp(10rem, 15vw, 15rem);
+      border-radius: 0.9rem;
+      cursor: pointer;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 30% 20%, rgba(215, 255, 238, 0.22), transparent 52%),
+        linear-gradient(160deg, rgba(52, 210, 145, 0.92) 0%, rgba(0, 185, 120, 0.94) 100%);
+      border: 1px solid rgba(40, 220, 150, 0.32);
+      box-shadow: 0 0 1.4vw rgba(55, 230, 165, 0.24), 0 0 2.6vw rgba(0, 0, 0, 0.28), inset 0 0 1vw rgba(215, 255, 235, 0.08);
+      opacity: 0;
+      transform: translateY(40px) scale(0.92);
+      transition: opacity 1s ease, transform 1.1s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease, border-color 0.4s ease;
+      animation: cardFloat 5.5s ease-in-out infinite;
+    }
+
+    /* ── 카드 개별 등장 클래스 ── */
+    .tarot-card.card-visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    /* ── 메시지 도착 공지 + 버튼 영역 ── */
+    .tarot-announce {
+      position: absolute;
+      left: 50%;
+      top: 65%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s ease;
+      z-index: 9999;
+      white-space: nowrap;
+    }
+
+    .tarot-announce.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .tarot-announce-text {
+      font-size: clamp(0.72rem, 0.9vw, 0.88rem);
+      letter-spacing: 0.22em;
+      color: rgba(205, 255, 230, 0.72);
+      text-align: center;
+      text-shadow: 0 0 12px rgba(120, 255, 205, 0.2);
+    }
+
+    .tarot-reveal-btn {
+      position: relative;
+      padding: 0.62rem 1.8rem;
+      border-radius: 999px;
+      border: 1px solid rgba(120, 255, 205, 0.38);
+      background: rgba(0, 185, 120, 0.14);
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(0.82rem, 0.98vw, 1rem);
+      font-weight: 500;
+      letter-spacing: 0.28em;
+      color: rgba(215, 255, 238, 0.92);
+      cursor: pointer;
+      box-shadow: 0 0 14px rgba(55, 225, 155, 0.18);
+      transition: background 0.3s ease, border-color 0.3s ease,
+        transform 0.3s ease, opacity 0.4s ease;
+      animation: btnPulse 2.8s ease-in-out infinite;
+    }
+
+    .tarot-reveal-btn:hover {
+      background: rgba(25, 200, 135, 0.22);
+      border-color: rgba(170, 255, 215, 0.6);
+      box-shadow: 0 0 22px rgba(55, 225, 155, 0.35);
+      transform: scale(1.04);
+    }
+
+    .tarot-reveal-btn.hide {
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(0.92);
+      animation: none;
+    }
+
+    @keyframes btnPulse {
+
+      0%,
+      100% {
+        opacity: 0.85;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .tarot-card:nth-child(1) {
+      animation-delay: 0s;
+    }
+
+    .tarot-card:nth-child(2) {
+      animation-delay: 1.5s;
+    }
+
+    .tarot-card:nth-child(3) {
+      animation-delay: 3s;
+    }
+
+    .tarot-stage.show .tarot-card {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    .tarot-stage.show .tarot-card:nth-child(1) {
+      transition-delay: 0.2s;
+    }
+
+    .tarot-stage.show .tarot-card:nth-child(2) {
+      transition-delay: 0.5s;
+    }
+
+    .tarot-stage.show .tarot-card:nth-child(3) {
+      transition-delay: 0.8s;
+    }
+
+    .tarot-card::before {
+      content: "";
+      position: absolute;
+      inset: 0.5rem;
+      border-radius: 0.6rem;
+      border: 1px solid rgba(120, 255, 205, 0.18);
+      pointer-events: none;
+    }
+
+    .tarot-card-back {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .tarot-symbol {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(105, 255, 195, 0.85) 0%, rgba(45, 225, 160, 0.6) 50%, transparent 80%);
+      box-shadow: 0 0 12px rgba(75, 235, 170, 0.7), 0 0 24px rgba(0, 190, 125, 0.4);
+      animation: tarotSymbolPulse 3s ease-in-out infinite;
+    }
+
+    .tarot-symbol::before {
+      content: "";
+      position: absolute;
+      inset: 25%;
+      border-radius: 50%;
+      background: rgb(140, 255, 205);
+    }
+
+    .tarot-card-label {
+      font-size: clamp(0.62rem, 0.78vw, 0.74rem);
+      letter-spacing: 0.32em;
+      color: rgb(228, 255, 242);
+      text-shadow: 0 0 10px rgba(120, 255, 205, 0.22);
+    }
+
+    @keyframes cardFloat {
+
+      0%,
+      100% {
+        translate: 0 0;
+      }
+
+      50% {
+        translate: 0 -8px;
+      }
+    }
+
+    @keyframes tarotSymbolPulse {
+
+      0%,
+      100% {
+        opacity: 0.65;
+        transform: scale(0.9);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.1);
+      }
+    }
+
+    .tarot-card:hover {
+      border-color: rgba(170, 255, 215, 0.55);
+      box-shadow: 0 0 1.8vw rgba(30, 215, 145, 0.35), 0 0 3vw rgba(0, 0, 0, 0.38), inset 0 0 1.2vw rgba(200, 255, 230, 0.14);
+    }
+
+    .tarot-card.flipped {
+      pointer-events: none;
+      cursor: default;
+      animation: cardChosen 1.4s ease forwards;
+    }
+
+    .tarot-card.flipped .tarot-card-back {
+      opacity: 0;
+    }
+
+    .tarot-card.flipped .tarot-card-front {
+      opacity: 1;
+    }
+
+    .tarot-card.faded {
+      opacity: 0.18 !important;
+      transform: translateY(0) scale(0.92) !important;
+      filter: blur(2px);
+      pointer-events: none;
+      transition: all 1.2s ease !important;
+    }
+
+    @keyframes cardChosen {
+      0% {
+        transform: translateY(0) scale(1) rotateY(0deg);
+      }
+
+      50% {
+        transform: translateY(-20px) scale(1.08) rotateY(90deg);
+      }
+
+      100% {
+        transform: translateY(-10px) scale(1.05) rotateY(180deg);
+      }
+    }
+
+    .tarot-card-front {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.2rem;
+      text-align: center;
+      opacity: 1;
+      transform: rotateY(180deg);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+
+    .tarot-card-front .tarot-symbol {
+      margin-bottom: 0.9rem;
+    }
+
+    .tarot-message-title {
+      font-size: clamp(0.88rem, 1vw, 1.05rem);
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      color: rgba(242, 255, 248, 0.98);
+      margin-bottom: 0.6rem;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.22), 0 0 16px rgba(120, 255, 205, 0.26);
+    }
+
+    .tarot-message-body {
+      font-size: clamp(0.74rem, 0.84vw, 0.88rem);
+      line-height: 1.72;
+      letter-spacing: 0.03em;
+      color: rgba(222, 255, 238, 0.92);
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.08);
+    }
+
+    .tarot-hint {
+      position: absolute;
+      bottom: 3.5%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9998;
+      pointer-events: none;
+      font-size: clamp(0.74rem, 0.92vw, 0.96rem);
+      font-weight: 600;
+      letter-spacing: 0.34em;
+      color: rgb(235, 255, 245);
+      text-align: center;
+      opacity: 0;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.16), 0 0 18px rgba(120, 255, 205, 0.18);
+    }
+
+    .tarot-hint .tarot-hint-sub {
+      display: block;
+      margin-top: 0.48rem;
+      font-size: clamp(0.62rem, 0.74vw, 0.76rem);
+      font-weight: 500;
+      letter-spacing: 0.14em;
+      color: rgb(205, 255, 230);
+      text-shadow: 0 0 10px rgba(120, 255, 205, 0.12);
+    }
+
+    @keyframes tarotHintIn {
+      to {
+        opacity: 1;
+      }
+    }
+
+    .tarot-hint.hide {
+      animation: none;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+    }
+
+    /* ===== TOP NAV ===== */
+    .top-nav {
+      position: absolute;
+      top: 3%;
+      left: 2%;
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.65rem;
+    }
+
+    .menu-toggle-btn {
+      position: relative;
+      width: clamp(2.5rem, 3.2vw, 3.2rem);
+      height: clamp(2.5rem, 3.2vw, 3.2rem);
+      border-radius: 50%;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      box-shadow: 0 0 0.8vw rgba(55, 225, 155, 0.22), inset 0 0 0.35vw rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .menu-toggle-btn:hover {
+      transform: scale(1.08);
+    }
+
+    .menu-toggle-btn::before {
+      content: "";
+      width: clamp(0.72rem, 0.95vw, 0.95rem);
+      height: clamp(0.72rem, 0.95vw, 0.95rem);
+      border-radius: 50%;
+      background: #60f0b5;
+      box-shadow: 0 0 0.6vw rgba(55, 225, 155, 0.6), 0 0 1.2vw rgba(0, 190, 125, 0.32);
+    }
+
+    .menu-toggle-btn span {
+      position: absolute;
+      width: 1.1rem;
+      height: 1px;
+      border-radius: 999px;
+      background: rgba(232, 255, 242, 0.88);
+      box-shadow: 0 0 0.35vw rgba(120, 255, 205, 0.45);
+      transition: transform 0.28s ease, opacity 0.28s ease;
+    }
+
+    .menu-toggle-btn span:nth-child(1) {
+      transform: translateY(-0.32rem);
+    }
+
+    .menu-toggle-btn span:nth-child(2) {
+      transform: translateY(0);
+    }
+
+    .menu-toggle-btn span:nth-child(3) {
+      transform: translateY(0.32rem);
+    }
+
+    .top-nav.open .menu-toggle-btn span:nth-child(1) {
+      transform: rotate(45deg);
+    }
+
+    .top-nav.open .menu-toggle-btn span:nth-child(2) {
+      opacity: 0;
+    }
+
+    .top-nav.open .menu-toggle-btn span:nth-child(3) {
+      transform: rotate(-45deg);
+    }
+
+    .nav-menu {
+      min-width: 11.5rem;
+      padding: 0.9rem 1rem;
+      border-radius: 1.15rem;
+      margin-left: 0.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.72rem;
+      background: rgba(4, 12, 8, 0.36);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      box-shadow: 0 0 1vw rgba(55, 225, 155, 0.14), 0 0 1.8vw rgba(0, 0, 0, 0.22), inset 0 0 0.45vw rgba(255, 255, 255, 0.07);
+      opacity: 0;
+      transform: translateY(-0.35rem) scale(0.96);
+      pointer-events: none;
+      transition: opacity 0.32s ease, transform 0.32s ease;
+    }
+
+    .top-nav.open .nav-menu {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+
+    .nav-link {
+      width: 100%;
+      box-sizing: border-box;
+      font-size: clamp(0.78rem, 0.86vw, 0.92rem);
+      letter-spacing: 0.16em;
+      font-weight: 500;
+      color: rgba(205, 255, 230, 0.82);
+      cursor: pointer;
+      padding: 0.48rem 0.65rem;
+      border-radius: 999px;
+      transition: color 0.28s ease, background 0.28s ease, transform 0.28s ease, text-shadow 0.28s ease;
+    }
+
+    .nav-link:hover {
+      color: rgba(244, 255, 248, 0.98);
+      background: rgba(255, 255, 255, 0.07);
+      transform: translateX(3px);
+      text-shadow: 0 0 0.45vw rgba(75, 235, 170, 0.4);
+    }
+
+    /* ===== MODE TOGGLE ===== */
+    .mode-toggle {
+      position: absolute;
+      top: 3%;
+      right: 3%;
+      width: 3.3rem;
+      height: 1.68rem;
+      border-radius: 999px;
+      z-index: 20;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .toggle-knob {
+      position: absolute;
+      top: 50%;
+      left: 0.18rem;
+      width: 1.26rem;
+      height: 1.26rem;
+      border-radius: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.92);
+      transition: left 0.28s ease, background 0.28s ease;
+    }
+
+    .mode-toggle.active .toggle-knob {
+      left: 1.84rem;
+    }
+
+    /* ===== MUSIC BTN ===== */
+    .music-btn {
+      position: absolute;
+      bottom: 6%;
+      right: 4%;
+      width: clamp(2.5rem, 3.2vw, 3.2rem);
+      height: clamp(2.5rem, 3.2vw, 3.2rem);
+      border-radius: 50%;
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      transition: all 0.3s ease;
+    }
+
+    .music-btn:hover {
+      transform: scale(1.08);
+    }
+
+    .music-inner {
+      width: clamp(0.7rem, 0.9vw, 0.9rem);
+      height: clamp(0.7rem, 0.9vw, 0.9rem);
+      border-radius: 50%;
+      background: #60f0b5;
+      box-shadow: 0 0 0.6vw rgba(55, 225, 155, 0.6);
+    }
+
+    .music-label {
+      position: absolute;
+      left: 50%;
+      bottom: -1.55rem;
+      transform: translateX(-50%);
+      width: max-content;
+      min-width: 6.2rem;
+      font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      text-align: center;
+      white-space: nowrap;
+      color: rgba(255, 255, 255, 0.62);
+    }
+
+    .music-btn.playing .music-label {
+      color: rgba(95, 245, 185, 0.95);
+      text-shadow: 0 0 0.4vw rgba(55, 225, 155, 0.4);
+    }
+
+    /* ===== TRANSITION OVERLAY ===== */
+    .transition-overlay {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 99999;
+      transition: opacity 0.8s ease;
+    }
+
+    .transition-overlay.show {
+      opacity: 1;
+    }
+
+    /* ===== GEM & CARD DETAIL MODALS ===== */
+    .gem-detail-modal,
+    .card-detail-modal {
+      position: absolute;
+      inset: 0;
+      z-index: 65;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    .gem-detail-modal.show,
+    .card-detail-modal.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .gem-detail-backdrop,
+    .card-detail-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .gem-detail-panel,
+    .card-detail-panel {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(62vw, 58rem);
+      height: min(82vh, 44rem);
+      transform: translate(-50%, -50%) scale(0.92);
+      border-radius: 1.35rem;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      box-shadow: 0 0 2vw rgba(0, 0, 0, 0.22), inset 0 0 1vw rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+      transition: transform 0.35s ease;
+    }
+
+    .gem-detail-modal.show .gem-detail-panel,
+    .card-detail-modal.show .card-detail-panel {
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .gem-detail-close,
+    .card-detail-close {
+      position: absolute;
+      top: 0.9rem;
+      right: 0.9rem;
+      z-index: 3;
+      width: 2.1rem;
+      height: 2.1rem;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 1.15rem;
+    }
+
+    .gem-detail-head {
+      position: absolute;
+      top: 1rem;
+      left: 1.1rem;
+      right: 3.5rem;
+      z-index: 2;
+    }
+
+    .gem-detail-kicker,
+    .card-detail-kicker {
+      font-size: 0.72rem;
+      letter-spacing: 0.18em;
+      color: rgba(255, 255, 255, 0.45);
+      margin-bottom: 0.8rem;
+    }
+
+    .gem-detail-head h3,
+    .card-detail-title {
+      margin: 0 0 1rem 0;
+      font-size: clamp(1.08rem, 1.35vw, 1.55rem);
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.95);
+      transform: translateY(-0.35rem);
+    }
+
+    .gem-detail-viewer {
+      position: absolute;
+      inset: 4.6rem 0 0 0;
+    }
+
+    .gem-detail-viewer spline-viewer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 1;
+      transform: none;
+    }
+
+    .card-detail-body {
+      width: 100%;
+      height: 100%;
+      padding: 2.3rem;
+      box-sizing: border-box;
+    }
+
+    .card-detail-layout {
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+      gap: 1.6rem;
+      align-items: stretch;
+      height: 100%;
+    }
+
+    .card-detail-image-wrap {
+      height: 100%;
+      border-radius: 1rem;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .card-detail-image-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card-detail-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      padding-top: 3.2rem;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .card-detail-copy {
+      font-size: clamp(0.95rem, 1vw, 1.05rem);
+      line-height: 1.9;
+      color: rgba(255, 255, 255, 0.76);
+      overflow-y: auto;
+      max-height: min(24rem, 48vh);
+      padding-right: 0.5rem;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(70, 230, 165, 0.55) transparent;
+    }
+
+    .card-detail-copy::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .card-detail-copy::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 999px;
+    }
+
+    .card-detail-copy::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(215, 255, 235, 0.72), rgba(120, 255, 205, 0.58));
+      box-shadow: 0 0 8px rgba(55, 225, 155, 0.18);
+    }
+
+    /* ================================================================
+       ===== SPLIT SCREEN (main new layout) =====
+       ================================================================ */
+    .split-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      display: flex;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.0s ease;
+    }
+
+    .split-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .split-overlay.hide-all {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.65s ease;
+    }
+
+    /* ─── LEFT HALF ─── */
+    .left-half {
+      position: relative;
+      width: 50%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 3.8rem 0 3.2rem;
+      cursor: pointer;
+      overflow: hidden;
+      background: linear-gradient(160deg, #9fe8c8 0%, #49b887 38%, #79d9ad 65%, #c5f5dd 100%);
+      transition: background 0.4s ease;
+    }
+
+    /* ambient glow */
+    .left-half::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 68% 48%, rgba(210, 255, 232, 0.55), transparent 52%),
+        radial-gradient(ellipse at 18% 82%, rgba(28, 150, 98, 0.22), transparent 44%);
+      pointer-events: none;
+    }
+
+    /* hover tint */
+    .left-half::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(20, 150, 95, 0.07);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    .left-half:hover::after {
+      opacity: 1;
+    }
+
+    /* background emerald image */
+    .left-bg-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      opacity: 0.22;
+      filter: saturate(0.75) brightness(1.05);
+      pointer-events: none;
+    }
+
+    /* decorative vertical accent line */
+    .left-accent-line {
+      position: absolute;
+      left: 1.6rem;
+      top: 22%;
+      bottom: 22%;
+      width: 1px;
+      background: linear-gradient(to bottom,
+          transparent,
+          rgba(18, 125, 82, 0.5) 35%,
+          rgba(18, 125, 82, 0.5) 65%,
+          transparent);
+    }
+
+    /* top-right label */
+    .left-corner-label {
+      position: absolute;
+      top: 1.6rem;
+      right: 2rem;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.62rem;
+      font-weight: 300;
+      letter-spacing: 0.3em;
+      color: rgba(18, 105, 72, 0.68);
+    }
+
+    .left-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    .left-kicker {
+      font-family: 'Jost', sans-serif;
+      font-size: clamp(0.6rem, 0.7vw, 0.72rem);
+      font-weight: 300;
+      letter-spacing: 0.34em;
+      color: rgba(12, 110, 76, 0.88);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .left-kicker::before {
+      content: '';
+      display: inline-block;
+      width: 1.8rem;
+      height: 1px;
+      background: rgba(16, 125, 84, 0.65);
+    }
+
+    .left-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(3.2rem, 5.5vw, 6.8rem);
+      font-weight: 300;
+      letter-spacing: 0.24em;
+      color: rgba(8, 72, 52, 0.94);
+      margin: 0 0 0.1em 0;
+      line-height: 0.88;
+      text-shadow: 0 0 60px rgba(165, 255, 215, 0.55), 0 0 120px rgba(50, 190, 130, 0.28);
+      letter-spacing: 0.15em;
+    }
+
+    .left-subtitle {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(0.95rem, 1.3vw, 1.4rem);
+      font-weight: 300;
+      font-style: italic;
+      letter-spacing: 0.2em;
+      color: rgba(15, 120, 82, 0.78);
+      margin: 0.2em 0 1.8rem 0;
+    }
+
+    .left-rule {
+      width: 2.6rem;
+      height: 1px;
+      background: linear-gradient(90deg, rgba(18, 130, 88, 0.7), transparent);
+      margin-bottom: 1.7rem;
+    }
+
+    .left-body {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(0.98rem, 1.08vw, 1.14rem);
+      font-weight: 400;
+      line-height: 2.0;
+      color: rgba(8, 70, 52, 0.76);
+      margin: 0 0 2rem 0;
+      max-width: 30ch;
+    }
+
+    .left-tags {
+      display: flex;
+      gap: 0.55rem;
+      flex-wrap: wrap;
+      margin-bottom: 2.4rem;
+    }
+
+    .left-tag {
+      padding: 0.28rem 0.82rem;
+      border-radius: 999px;
+      border: 1px solid rgba(18, 135, 90, 0.42);
+      background: rgba(20, 170, 110, 0.16);
+      font-family: 'Jost', sans-serif;
+      font-size: clamp(0.58rem, 0.66vw, 0.68rem);
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      color: rgba(8, 95, 68, 0.9);
+    }
+
+    .left-cta {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      font-family: 'Jost', sans-serif;
+      font-size: clamp(0.68rem, 0.78vw, 0.8rem);
+      font-weight: 300;
+      letter-spacing: 0.24em;
+      color: rgba(8, 95, 68, 0.8);
+      transition: color 0.35s ease;
+    }
+
+    .left-cta-arrow {
+      display: flex;
+      align-items: center;
+      width: 2rem;
+      height: 1px;
+      background: rgba(18, 130, 88, 0.7);
+      position: relative;
+      transition: width 0.35s ease;
+    }
+
+    .left-cta-arrow::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: -3px;
+      border-top: 4px solid transparent;
+      border-bottom: 4px solid transparent;
+      border-left: 5px solid rgba(18, 130, 88, 0.7);
+    }
+
+    .left-half:hover .left-cta {
+      color: rgba(3, 60, 44, 0.96);
+    }
+
+    .left-half:hover .left-cta-arrow {
+      width: 3rem;
+    }
+
+    .left-bottom-hint {
+      position: absolute;
+      bottom: 1.8rem;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.58rem;
+      letter-spacing: 0.28em;
+      color: rgba(8, 95, 68, 0.42);
+      animation: softBlink 3.2s ease-in-out infinite;
+    }
+
+    @keyframes softBlink {
+
+      0%,
+      100% {
+        opacity: 0.45;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    /* ─── DIVIDER ─── */
+    .split-divider {
+      position: absolute;
+      left: 50%;
+      top: 8%;
+      bottom: 8%;
+      width: 1px;
+      background: linear-gradient(to bottom,
+          transparent,
+          rgba(15, 155, 100, 0.26) 25%,
+          rgba(15, 155, 100, 0.26) 75%,
+          transparent);
+      z-index: 6;
+      pointer-events: none;
+    }
+
+    /* ─── RIGHT HALF ─── */
+    .right-half {
+      position: relative;
+      width: 50%;
+      height: 100%;
+      cursor: pointer;
+      overflow: hidden;
+      background: #000;
+    }
+
+    /* Preview image — slow Ken Burns zoom from center */
+    .right-preview-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: 46% center;
+      transform-origin: center center;
+      animation: previewZoom 12s ease-in-out infinite alternate;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes previewZoom {
+      from {
+        transform: scale(1.0);
+      }
+
+      to {
+        transform: scale(1.18);
+      }
+    }
+
+    /* Dark vignette on top of preview image */
+    .right-preview-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at center, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.55) 100%),
+        linear-gradient(to left, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.05) 60%);
+      transition: background 0.4s ease;
+    }
+
+    .right-half:hover .right-preview-vignette {
+      background:
+        radial-gradient(ellipse at center, rgba(0, 0, 0, 0.08) 0%, rgba(0, 0, 0, 0.42) 100%),
+        linear-gradient(to left, rgba(0, 0, 0, 0.18) 0%, rgba(0, 0, 0, 0.02) 60%);
+    }
+
+    /* interact badge bottom-right */
+    .right-content {
+      position: absolute;
+      right: 2rem;
+      bottom: 2.4rem;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.5rem;
+      z-index: 3;
+    }
+
+    .right-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: background 0.35s ease, border-color 0.35s ease;
+    }
+
+    .right-half:hover .right-badge {
+      background: rgba(255, 255, 255, 0.09);
+      border-color: rgba(165, 255, 215, 0.22);
+    }
+
+    .right-badge-dot {
+      width: 0.4rem;
+      height: 0.4rem;
+      border-radius: 50%;
+      background: rgba(75, 235, 170, 0.82);
+      box-shadow: 0 0 6px rgba(30, 215, 145, 0.5);
+      animation: dotPulse 2.2s ease-in-out infinite;
+    }
+
+    @keyframes dotPulse {
+
+      0%,
+      100% {
+        opacity: 0.55;
+        transform: scale(0.85);
+      }
+
+      50% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
+    }
+
+    .right-badge-text {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.66rem;
+      font-weight: 300;
+      letter-spacing: 0.24em;
+      color: rgba(205, 255, 230, 0.68);
+    }
+
+    .right-expand-hint {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.56rem;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      color: rgba(105, 245, 190, 0.28);
+      text-align: right;
+    }
+
+    /* center icon (top-center of right half) */
+    .right-center-hint {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.7rem;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      z-index: 3;
+    }
+
+    .right-half:hover .right-center-hint {
+      opacity: 1;
+    }
+
+    .right-center-icon {
+      width: 3.5rem;
+      height: 3.5rem;
+      border-radius: 50%;
+      border: 1px solid rgba(170, 255, 215, 0.18);
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      color: rgba(190, 255, 225, 0.7);
+    }
+
+    .right-center-label {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.62rem;
+      font-weight: 300;
+      letter-spacing: 0.3em;
+      color: rgba(170, 255, 215, 0.5);
+      white-space: nowrap;
+    }
+
+    /* ===== BACK BUTTON ===== */
+    .back-btn {
+      position: absolute;
+      top: 3%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      padding: 0.58rem 1.5rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      font-family: 'Jost', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 300;
+      letter-spacing: 0.24em;
+      color: rgba(205, 255, 230, 0.75);
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease, background 0.3s ease, color 0.3s ease;
+    }
+
+    .back-btn.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .back-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(222, 255, 238, 0.95);
+    }
+
+    /* ===== DETAIL TRIGGER (fullscreen spline mode) ===== */
+    .detail-trigger {
+      position: absolute;
+      bottom: 8%;
+      left: 50%;
+      transform: translateX(-50%) translateY(14px);
+      z-index: 20;
+      padding: 0.72rem 2rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      background: rgba(3, 10, 7, 0.35);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 0 1.2vw rgba(20, 170, 115, 0.14), inset 0 0 0.6vw rgba(255, 255, 255, 0.03);
+      font-family: 'Jost', sans-serif;
+      font-size: clamp(0.68rem, 0.78vw, 0.8rem);
+      font-weight: 300;
+      letter-spacing: 0.28em;
+      color: rgba(190, 255, 225, 0.72);
+      cursor: pointer;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .detail-trigger.show {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .detail-trigger:hover {
+      background: rgba(0, 160, 105, 0.18);
+      border-color: rgba(100, 245, 185, 0.28);
+      color: rgba(215, 255, 238, 0.95);
+    }
+
+    /* ===== DESC CARDS OVERLAY ===== */
+    .desc-cards-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 55;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.45s ease;
+    }
+
+    .desc-cards-overlay.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .desc-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(1, 8, 5, 0.75);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+
+    .desc-cards-wrapper {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.8rem;
+      width: min(90vw, 74rem);
+    }
+
+    /* wrapper close button */
+    .desc-close-btn {
+      position: absolute;
+      top: -3.2rem;
+      right: 0;
+      width: 2.1rem;
+      height: 2.1rem;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.25s ease;
+    }
+
+    .desc-close-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    /* header */
+    .desc-cards-header {
+      text-align: center;
+    }
+
+    .desc-cards-kicker {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.64rem;
+      font-weight: 300;
+      letter-spacing: 0.32em;
+      color: rgba(35, 190, 130, 0.58);
+      margin-bottom: 0.55rem;
+    }
+
+    .desc-cards-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.3rem, 2vw, 2rem);
+      font-weight: 300;
+      letter-spacing: 0.14em;
+      color: rgba(222, 255, 238, 0.85);
+      margin: 0;
+    }
+
+    /* grid */
+    .desc-cards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.4rem;
+      width: 100%;
+    }
+
+    .desc-card {
+      position: relative;
+      border-radius: 1.15rem;
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      background: rgba(5, 18, 12, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.35s ease, box-shadow 0.35s ease;
+      animation: cardReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    .desc-card:nth-child(1) {
+      animation-delay: 0.04s;
+    }
+
+    .desc-card:nth-child(2) {
+      animation-delay: 0.14s;
+    }
+
+    @keyframes cardReveal {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.97);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .desc-card:hover {
+      transform: translateY(-6px) scale(1.015);
+      border-color: rgba(20, 180, 120, 0.22);
+      box-shadow: 0 14px 48px rgba(0, 0, 0, 0.4), 0 0 24px rgba(0, 135, 92, 0.1);
+    }
+
+    /* image section */
+    .desc-card-img-wrap {
+      position: relative;
+      overflow: hidden;
+      height: clamp(9rem, 16vw, 14rem);
+    }
+
+    .desc-card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: brightness(0.85) saturate(0.88);
+      transition: filter 0.45s ease, transform 0.45s ease;
+    }
+
+    .desc-card:hover .desc-card-img {
+      filter: brightness(0.95) saturate(1.06);
+      transform: scale(1.04);
+    }
+
+    /* gradient at bottom of image */
+    .desc-card-img-wrap::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 45%, rgba(3, 12, 8, 0.72) 100%);
+    }
+
+    /* image top-left badge */
+    .desc-card-img-badge {
+      position: absolute;
+      top: 0.85rem;
+      left: 0.85rem;
+      z-index: 2;
+      padding: 0.24rem 0.7rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.35);
+      backdrop-filter: blur(6px);
+      font-family: 'Jost', sans-serif;
+      font-size: 0.54rem;
+      font-weight: 300;
+      letter-spacing: 0.22em;
+      color: rgba(190, 255, 225, 0.75);
+    }
+
+    /* text section */
+    .desc-card-body {
+      padding: 1.3rem 1.5rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .desc-card-kicker {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.58rem;
+      font-weight: 300;
+      letter-spacing: 0.3em;
+      color: rgba(35, 190, 130, 0.6);
+      margin-bottom: 0.55rem;
+    }
+
+    .desc-card-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.05rem, 1.3vw, 1.4rem);
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      color: rgba(222, 255, 238, 0.9);
+      margin: 0 0 0.75rem 0;
+      line-height: 1.28;
+    }
+
+    .desc-card-excerpt {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(0.88rem, 0.96vw, 1rem);
+      line-height: 1.75;
+      color: rgba(180, 255, 220, 0.52);
+      margin: 0 0 1.3rem 0;
+      flex: 1;
+    }
+
+    .desc-card-readmore {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-family: 'Jost', sans-serif;
+      font-size: 0.6rem;
+      font-weight: 300;
+      letter-spacing: 0.26em;
+      color: rgba(45, 215, 150, 0.62);
+      transition: gap 0.35s ease, color 0.35s ease;
+    }
+
+    .desc-card-readmore-arrow {
+      width: 1.5rem;
+      height: 1px;
+      background: rgba(30, 200, 140, 0.5);
+      position: relative;
+      transition: width 0.35s ease;
+    }
+
+    .desc-card-readmore-arrow::after {
+      content: '';
+      position: absolute;
+      right: -1px;
+      top: -3px;
+      border-top: 3px solid transparent;
+      border-bottom: 3px solid transparent;
+      border-left: 4px solid rgba(30, 200, 140, 0.5);
+    }
+
+    .desc-card:hover .desc-card-readmore {
+      gap: 0.95rem;
+      color: rgba(85, 240, 175, 0.88);
+    }
+
+    .desc-card:hover .desc-card-readmore-arrow {
+      width: 2.2rem;
+    }
+
+    /* ── alternate layout for 2nd card (image on right concept, slightly different) ── */
+    .desc-card.alt .desc-card-img-wrap {
+      height: clamp(9rem, 16vw, 14rem);
+    }
+
+    /* mobile */
+    @media (max-width: 860px) {
+      .left-half {
+        padding: 0 2rem 0 2.4rem;
+      }
+
+      .left-title {
+        font-size: clamp(2.6rem, 10vw, 4.5rem);
+      }
+
+      .desc-cards-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .desc-cards-wrapper {
+        width: min(92vw, 30rem);
+      }
+
+      .right-center-hint {
+        display: none;
+      }
+
+      .right-badge-text {
+        font-size: 0.6rem;
+      }
+    }
+
+
+    /* ===== MENU TAROT MODAL ===== */
+    .menu-tarot-modal {
+      position: absolute;
+      inset: 0;
+      z-index: 80;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    .menu-tarot-modal.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .menu-tarot-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(1, 8, 5, 0.62);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    .menu-tarot-panel {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(78vw, 48rem);
+      min-height: min(68vh, 34rem);
+      transform: translate(-50%, -50%) scale(0.94);
+      border-radius: 1.35rem;
+      border: 1px solid rgba(160, 255, 215, 0.18);
+      background: linear-gradient(180deg, rgba(8, 28, 18, 0.88), rgba(3, 12, 8, 0.86));
+      box-shadow: 0 0 2vw rgba(0, 0, 0, 0.38), inset 0 0 1vw rgba(160, 255, 215, 0.06);
+      padding: 2.6rem 2.4rem 2.4rem;
+      text-align: center;
+      transition: transform 0.35s ease;
+    }
+
+    .menu-tarot-modal.show .menu-tarot-panel {
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .menu-tarot-close {
+      position: absolute;
+      top: 0.9rem;
+      right: 0.9rem;
+      width: 2.1rem;
+      height: 2.1rem;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(235, 255, 245, 0.82);
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+
+    .menu-tarot-kicker {
+      font-family: 'Jost', sans-serif;
+      font-size: 0.64rem;
+      font-weight: 300;
+      letter-spacing: 0.34em;
+      color: rgba(120, 255, 205, 0.62);
+      margin-bottom: 0.7rem;
+    }
+
+    .menu-tarot-title {
+      margin: 0;
+      font-size: clamp(1.7rem, 3vw, 3rem);
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      color: rgba(235, 255, 245, 0.96);
+      text-shadow: 0 0 24px rgba(95, 245, 185, 0.18);
+    }
+
+    .menu-tarot-desc {
+      margin: 0.9rem 0 2rem;
+      font-size: clamp(0.9rem, 1vw, 1.05rem);
+      line-height: 1.7;
+      color: rgba(205, 255, 230, 0.68);
+      letter-spacing: 0.04em;
+    }
+
+    .menu-tarot-cards {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: clamp(1rem, 2.4vw, 2rem);
+      margin-bottom: 1.7rem;
+      perspective: 900px;
+    }
+
+    .menu-tarot-card {
+      position: relative;
+      width: clamp(7rem, 10vw, 10rem);
+      height: clamp(10rem, 15vw, 15rem);
+      border-radius: 1rem;
+      border: 1px solid rgba(0, 255, 200, 0.34);
+
+      background:
+        radial-gradient(circle at 50% 0%, rgba(167, 255, 212, 0), transparent 42%),
+        linear-gradient(180deg, rgba(73, 255, 173, 0.692), rgba(34, 218, 147, 0.61));
+
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+
+      color: rgba(201, 255, 228, 0.95);
+      box-shadow:
+        0 12px 30px rgba(0, 0, 0, .18);
+
+      cursor: pointer;
+      overflow: hidden;
+      transition:
+        transform 0.35s ease,
+        opacity 0.35s ease,
+        box-shadow 0.35s ease,
+        border-color 0.35s ease;
+      font-family: 'Cormorant Garamond', serif;
+      animation: none;
+    }
+
+
+    .menu-tarot-card::before {
+      content: "";
+      position: absolute;
+      inset: 0.65rem;
+      border-radius: 0.68rem;
+      border: 1px solid rgba(235, 255, 245, 0.18);
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .menu-tarot-card::after {
+      content: "";
+      position: absolute;
+      top: -18%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 125%;
+      height: 62%;
+
+      background:
+        radial-gradient(ellipse,
+          rgba(220, 255, 238, 0.28),
+          rgba(130, 255, 205, 0.1) 42%,
+          transparent 72%);
+
+      pointer-events: none;
+      z-index: 1;
+      box-shadow: none;
+      animation: none;
+    }
+
+    .menu-tarot-card span {
+      position: relative;
+      z-index: 3;
+      display: block;
+      font-size: clamp(1.45rem, 2.2vw, 2.2rem);
+      margin-bottom: 4.2rem;
+      letter-spacing: 0.08em;
+      color: rgba(248, 255, 252, 0.94);
+      text-shadow:
+        0 0 10px rgba(180, 255, 225, 0.24);
+    }
+
+    .menu-tarot-card em {
+      position: relative;
+      z-index: 3;
+      font-family: 'Jost', sans-serif;
+      font-style: normal;
+      font-size: 0.58rem;
+      letter-spacing: 0.28em;
+      color: rgba(235, 255, 245, 0.78);
+    }
+
+    .menu-tarot-card:hover {
+      transform: translateY(-8px) scale(1.03);
+      border-color: rgba(235, 255, 245, 0.48);
+      box-shadow: 0 20px 46px rgba(0, 0, 0, 0.3);
+    }
+
+    .menu-tarot-card.picked {
+      transform: translateY(-10px) scale(1.05);
+      border-color: rgba(245, 255, 250, 0.62);
+      box-shadow:
+        0 24px 54px rgba(0, 0, 0, 0.34),
+        0 0 42px rgba(140, 255, 210, 0.22),
+        inset 0 0 28px rgba(255, 255, 255, 0.1);
+    }
+
+    .menu-tarot-card.dimmed {
+      opacity: 0.28;
+      transform: scale(0.96);
+      filter: saturate(0.7);
+      pointer-events: none;
+    }
+
+    .menu-tarot-result {
+      min-height: 4.2rem;
+      opacity: 0;
+      transform: translateY(10px);
+      color: rgba(222, 255, 238, 0.82);
+      line-height: 1.8;
+      font-size: clamp(0.95rem, 1.05vw, 1.08rem);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+    }
+
+    .menu-tarot-result.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .menu-tarot-result strong {
+      display: block;
+      margin-bottom: 0.35rem;
+      color: rgba(242, 255, 248, 0.96);
+      font-size: clamp(1.05rem, 1.25vw, 1.3rem);
+      letter-spacing: 0.08em;
+    }
+
+    /* 로딩 중에는 뮤직 토글 숨기기 */
+    body.loading .music-btn {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* 로딩 중에는 스플라인 조작 막기 */
+    body.loading spline-viewer {
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="viewport">
+    <div class="game-container">
+
+      <!-- ─── TOP NAV ─── -->
+      <div class="top-nav" id="topNav">
+        <button class="menu-toggle-btn" id="menuToggleBtn" aria-label="메뉴 열기">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="nav-menu" id="navMenu">
+          <div class="nav-link" onclick="goMenu()">MAIN MENU</div>
+          <div class="nav-link" onclick="goCollectGem()">COLLECT YOUR GEM</div>
+          <div class="nav-link" onclick="openTarotBox(event)">TODAY TAROT</div>
+        </div>
+      </div>
+
+      <!-- ─── MODE TOGGLE ─── -->
+      <div class="mode-toggle" id="modeToggle">
+        <div class="toggle-knob"></div>
+      </div>
+      <!-- ─── SPLINE STAGE (fullscreen behind everything) ─── -->
+      <div class="spline-stage">
+        <img id="posterImage" class="poster-image" src="./Emerald_view_image.jpg" alt="Spline preview"
+          fetchpriority="high" />
+        <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.95/build/spline-viewer.js"></script>
+        <spline-viewer id="splineScene" loading="eager" hint loading-anim-type="spinner-small-light"
+          url="https://prod.spline.design/o0jmMnJAPw-0IMuy/scene.splinecode">
+        </spline-viewer>
+      </div>
+
+      <!-- ─── LOADING OVERLAY (identical to original) ─── -->
+      <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-orb">
+          <span class="orb-dot orb-dot-1"></span>
+          <span class="orb-dot orb-dot-2"></span>
+          <span class="orb-dot orb-dot-3"></span>
+        </div>
+        <div class="loading-copy-box">
+          <div class="loading-kicker">AWAKENING</div>
+          <div class="loading-copy">
+            <span>에메랄드는 기대를 의미합니다</span>
+            <span>이번 로딩이 오래 걸릴 수 있습니다</span>
+            <span>기다려 주셔서 감사합니다</span>
+            <span>지금 가장 기대하는 순간이 무엇인가요?</span>
+            <span>저는 당신이 이 웹사이트를 방문한 순간입니다</span>
+            <span>마음에 드셨으면 좋겠어요</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PARTICLES ─── -->
+      <div class="particles" id="particles"></div>
+
+      <!-- ================================================================
+           SPLIT OVERLAY — appears after loading
+           ================================================================ -->
+      <div class="split-overlay" id="splitOverlay">
+
+        <!-- LEFT HALF: info panel -->
+        <div class="left-half" id="leftHalf">
+          <img class="left-bg-img" src="./에메랄드2.jpg" alt="">
+          <div class="left-accent-line"></div>
+          <div class="left-corner-label">EMERALD · 05</div>
+
+          <div class="left-content">
+            <div class="left-kicker">MAY · BIRTHSTONE</div>
+            <h1 class="left-title">E M E R A L D</h1>
+            <p class="left-subtitle">에메랄드</p>
+            <div class="left-rule"></div>
+            <p class="left-body">
+              고요한 숲의 결을 따라 피어나는 것은,<br>
+              깊은 초록빛입니다.<br>
+              에메랄드는 마음을 맑게 정돈하는<br>
+              생명력의 형태입니다.
+            </p>
+            <div class="left-tags">
+              <span class="left-tag">치유</span>
+              <span class="left-tag">성장</span>
+              <span class="left-tag">균형</span>
+              <span class="left-tag">5월</span>
+            </div>
+            <div class="left-cta">
+              <div class="left-cta-arrow"></div>
+              <span>Explore Details</span>
+            </div>
+          </div>
+
+          <div class="left-bottom-hint">TAP TO DISCOVER</div>
+        </div>
+
+        <!-- thin divider -->
+        <div class="split-divider"></div>
+
+        <!-- RIGHT HALF: preview image + transparent over spline -->
+        <div class="right-half" id="rightHalf">
+          <img class="right-preview-img" src="./Emerald_view_image.jpg" alt="에메랄드 프리뷰">
+          <div class="right-preview-vignette"></div>
+
+          <div class="right-center-hint">
+            <div class="right-center-icon">↗</div>
+            <div class="right-center-label">FULL SCREEN</div>
+          </div>
+          <div class="right-expand-hint">tap to enter full view</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── BACK BUTTON (visible in full-spline mode) ─── -->
+    <div class="back-btn" id="backBtn">← Return to Overview</div>
+
+    <!-- ─── DETAIL TRIGGER (visible in full-spline mode) ─── -->
+    <div class="detail-trigger" id="detailTrigger">EXPLORE EMERALD</div>
+
+    <!-- ================================================================
+           DESC CARDS OVERLAY — appears when left half is clicked
+           ================================================================ -->
+    <div class="desc-cards-overlay" id="descCardsOverlay">
+      <div class="desc-backdrop" id="descBackdrop"></div>
+      <div class="desc-cards-wrapper">
+        <button class="desc-close-btn" id="descCloseBtn">×</button>
+
+        <div class="desc-cards-header">
+          <div class="desc-cards-kicker">EMERALD · EXPLORE</div>
+          <h2 class="desc-cards-title">Discover the Gem</h2>
+        </div>
+
+        <div class="desc-cards-grid">
+          <!-- Card 1 : Artwork Note -->
+          <div class="desc-card" id="descCard1">
+            <div class="desc-card-img-wrap">
+              <div class="desc-card-img-badge">ARTWORK</div>
+              <img class="desc-card-img" src="./에메랄드2.jpg" alt="에메랄드 일러스트">
+            </div>
+            <div class="desc-card-body">
+              <div class="desc-card-kicker">ARTWORK NOTE</div>
+              <h3 class="desc-card-title">Visual Interpretation<br>of Emerald</h3>
+              <p class="desc-card-excerpt">
+                이 일러스트는 에메랄드를 하나의 숲빛과 호흡으로 확장해 해석하는 데서 출발했습니다. 보석이 가진 맑고 생명력 있는 정서를 보여주는 이미지를 만들고자 했습니다.
+              </p>
+              <div class="desc-card-readmore">
+                <div class="desc-card-readmore-arrow"></div>
+                <span>READ MORE</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2 : Birthstone Meaning -->
+          <div class="desc-card alt" id="descCard2">
+            <div class="desc-card-img-wrap">
+              <div class="desc-card-img-badge">MEANING</div>
+              <img class="desc-card-img" src="./Emerald_view_image.jpg" alt="에메랄드 상징">
+            </div>
+            <div class="desc-card-body">
+              <div class="desc-card-kicker">BIRTHSTONE MEANING</div>
+              <h3 class="desc-card-title">Growth &amp;<br>Harmony</h3>
+              <p class="desc-card-excerpt">
+                에메랄드는 5월의 탄생석으로, 오래전부터 성장과 조화, 치유의 상징으로 여겨져 왔습니다. 마음 안쪽의 초록빛이 천천히 번져나가는 흐름을 상징합니다.
+              </p>
+              <div class="desc-card-readmore">
+                <div class="desc-card-readmore-arrow"></div>
+                <span>READ MORE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ─── MENU TAROT MODAL ─── -->
+    <div class="menu-tarot-modal" id="menuTarotModal">
+      <div class="menu-tarot-backdrop" id="menuTarotBackdrop"></div>
+      <div class="menu-tarot-panel">
+        <button class="menu-tarot-close" id="menuTarotClose" aria-label="닫기">×</button>
+        <div class="menu-tarot-kicker">EMERALD TAROT</div>
+        <h2 class="menu-tarot-title">Choose Your Card</h2>
+        <p class="menu-tarot-desc">오늘의 흐름을 알고 싶다면 카드 한 장을 골라보세요.</p>
+        <div class="menu-tarot-cards" id="menuTarotCards">
+          <button class="menu-tarot-card" type="button" data-index="0"><span>Ⅰ</span><em>EMERALD</em></button>
+          <button class="menu-tarot-card" type="button" data-index="1"><span>Ⅱ</span><em>EMERALD</em></button>
+          <button class="menu-tarot-card" type="button" data-index="2"><span>Ⅲ</span><em>EMERALD</em></button>
+        </div>
+        <div class="menu-tarot-result" id="menuTarotResult"></div>
+      </div>
+    </div>
+
+    <!-- ─── CARD DETAIL MODAL (same as original) ─── -->
+    <div class="card-detail-modal" id="cardDetailModal">
+      <div class="card-detail-backdrop" id="cardDetailBackdrop"></div>
+      <div class="card-detail-panel">
+        <button class="card-detail-close" id="cardDetailClose" aria-label="닫기">×</button>
+        <div class="card-detail-body" id="cardDetailBody"></div>
+      </div>
+    </div>
+
+    <!-- ─── GEM DETAIL MODAL ─── -->
+    <div class="gem-detail-modal" id="gemDetailModal">
+      <div class="gem-detail-backdrop" id="gemDetailBackdrop"></div>
+      <div class="gem-detail-panel">
+        <button class="gem-detail-close" id="gemDetailClose" aria-label="닫기">×</button>
+        <div class="gem-detail-head">
+          <div class="gem-detail-kicker">DEEP VIEW</div>
+          <h3>Emerald Structure</h3>
+        </div>
+        <div class="gem-detail-viewer">
+          <spline-viewer url="https://prod.spline.design/luzbTZ-H4ILl4vIZ/scene.splinecode"></spline-viewer>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── MUSIC BTN ─── -->
+    <div class="music-btn" id="musicBtn">
+      <div class="music-inner"></div>
+      <div class="music-label">music on</div>
+    </div>
+
+    <!-- ─── TRANSITION OVERLAY ─── -->
+    <div class="transition-overlay" id="transitionOverlay"></div>
+
+    <!-- AUDIO -->
+    <audio id="bgm" loop>
+      <source src="./가넷노래.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="loadingSfx" preload="auto">
+      <source src="./ting.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="cardRevealSfx" preload="auto">
+      <source src="./타로카드알림음.mp3" type="audio/mpeg">
+    </audio>
+
+  </div>
+  </div>
+
+  <script>
+    document.body.classList.add("loading");
+    // ── DOM refs ──
+    const spline = document.getElementById("splineScene");
+    const audio = document.getElementById("bgm");
+    const particlesWrap = document.getElementById("particles");
+    const posterImage = document.getElementById("posterImage");
+    const loadingOverlay = document.getElementById("loadingOverlay");
+    const toggle = document.getElementById("modeToggle");
+    const overlay = document.getElementById("transitionOverlay");
+    const musicBtn = document.getElementById("musicBtn");
+    const musicLabel = document.querySelector(".music-label");
+    const gemDetailModal = document.getElementById("gemDetailModal");
+    const gemDetailClose = document.getElementById("gemDetailClose");
+    const gemDetailBackdrop = document.getElementById("gemDetailBackdrop");
+    const cardDetailModal = document.getElementById("cardDetailModal");
+    const cardDetailBackdrop = document.getElementById("cardDetailBackdrop");
+    const cardDetailClose = document.getElementById("cardDetailClose");
+    const cardDetailBody = document.getElementById("cardDetailBody");
+    const loadingSfx = document.getElementById("loadingSfx");
+    const cardRevealSfx = document.getElementById("cardRevealSfx");
+    const topNav = document.getElementById("topNav");
+    const menuToggleBtn = document.getElementById("menuToggleBtn");
+
+    // ── Split Screen refs ──
+    const splitOverlay = document.getElementById("splitOverlay");
+    const leftHalf = document.getElementById("leftHalf");
+    const rightHalf = document.getElementById("rightHalf");
+    const backBtn = document.getElementById("backBtn");
+    const detailTrigger = document.getElementById("detailTrigger");
+    const descCardsOverlay = document.getElementById("descCardsOverlay");
+    const descBackdrop = document.getElementById("descBackdrop");
+    const descCloseBtn = document.getElementById("descCloseBtn");
+    const descCard1 = document.getElementById("descCard1");
+    const descCard2 = document.getElementById("descCard2");
+    const menuTarotModal = document.getElementById("menuTarotModal");
+    const menuTarotBackdrop = document.getElementById("menuTarotBackdrop");
+    const menuTarotClose = document.getElementById("menuTarotClose");
+    const menuTarotCards = document.getElementById("menuTarotCards");
+    const menuTarotResult = document.getElementById("menuTarotResult");
+
+    // ── Tarot refs ──
+    const tarotStage = document.getElementById("tarotStage");
+    const tarotHint = document.getElementById("tarotHint");
+
+    // ── State ──
+    let splineShown = false;
+    let splineReady = false;
+    let minLoadingDone = false;
+    let fallbackTimer = null;
+    let loadingInterval = null;
+    let loadingSfxTimer = null;
+    let tarotPicked = false;
+    let fullSplineMode = false;
+
+    // ================================================================
+    // TAROT (identical to original)
+    // ================================================================
+    const tarotMessages = [
+      { title: "5월의 초록빛", body: "이번 달 당신의 흐름은 천천히 선명해집니다. 조급함보다 균형을 선택해 보세요." },
+      { title: "숨은 행운", body: "예상하지 못한 곳에서 좋은 기회가 들어옵니다. 작은 제안을 가볍게 넘기지 마세요." },
+      { title: "관계의 온기", body: "멀어진 인연보다 곁에 남아 있는 사람에게 답이 있습니다. 진심은 가까운 곳에 있어요." },
+      { title: "붉은 의지", body: "지쳤다고 느껴도 당신 안의 열정은 아직 살아 있습니다. 이번 주 다시 불붙습니다." },
+      { title: "금전의 흐름", body: "작은 지출을 정리하면 새로운 여유가 생깁니다. 아끼는 만큼 들어옵니다." },
+      { title: "감정의 회복", body: "마음이 무거웠다면 곧 풀립니다. 늦게 오던 답장이 뜻밖의 위로가 됩니다." },
+      { title: "에메랄드의 축복", body: "5월생의 기운이 부드럽게 열립니다. 당신의 마음이 원하는 방향으로 흐름이 정돈됩니다." }
+    ];
+
+    function buildTarotCards() {
+      const shuffled = [...tarotMessages].sort(() => Math.random() - 0.5).slice(0, 3);
+      shuffled.forEach(msg => {
+        const card = document.createElement("div");
+        card.className = "tarot-card";
+        card.innerHTML = `
+          <div class="tarot-card-back">
+            <div class="tarot-symbol"></div>
+            <div class="tarot-card-label">EMERALD</div>
+          </div>
+          <div class="tarot-card-front">
+            <div class="tarot-symbol"></div>
+            <div class="tarot-message-title">${msg.title}</div>
+            <div class="tarot-message-body">${msg.body}</div>
+          </div>`;
+        card.addEventListener("click", e => { e.stopPropagation(); handleCardPick(card); });
+        tarotStage.appendChild(card);
+      });
+      // 카드는 숨긴 채로, 공지 문구 + 버튼만 표시
+      setTimeout(() => { tarotAnnounce.classList.add("show"); }, 800);
+    }
+
+    function revealCardsSequentially() {
+      tarotRevealBtn.classList.add("hide");
+
+      if (cardRevealSfx) {
+        cardRevealSfx.pause();
+        cardRevealSfx.currentTime = 0;
+        cardRevealSfx.volume = 0.55;
+        cardRevealSfx.play().catch(() => { });
+      }
+
+      const cards = tarotStage.querySelectorAll(".tarot-card");
+      const delay = 520; // 카드 간 딜레이 (ms)
+
+      cards.forEach((card, i) => {
+        setTimeout(() => {
+          card.classList.add("card-visible");
+        }, i * delay);
+      });
+
+      // 마지막 카드 등장 후 "CHOOSE A CARD" 힌트 표시
+      setTimeout(() => {
+        if (tarotHint) {
+          tarotHint.style.animation = "tarotHintIn 1.2s ease forwards";
+          tarotHint.style.opacity = "";
+        }
+        tarotAnnounce.style.opacity = "0.35";
+      }, (cards.length - 1) * delay + 600);
+    }
+
+    function handleCardPick(chosen) {
+      if (tarotPicked || splineShown || !chosen.classList.contains("card-visible")) return;
+      tarotPicked = true;
+      playLoadingSfx();
+      setTimeout(() => playLoadingSfx(), 220);
+      document.querySelectorAll(".tarot-card").forEach(card => {
+        card.classList.add(card === chosen ? "flipped" : "faded");
+      });
+      if (tarotHint) tarotHint.classList.add("hide");
+    }
+
+    // ================================================================
+    // SPLIT SCREEN INTERACTIONS
+    // ================================================================
+    function showSplitScreen() {
+      document.body.classList.remove("loading");
+      splitOverlay.classList.add("show");
+    }
+
+    function enterFullSpline() {
+      if (fullSplineMode) return;
+      fullSplineMode = true;
+      splitOverlay.classList.add("hide-all");
+      setTimeout(() => {
+        splitOverlay.classList.remove("show");
+        splitOverlay.style.pointerEvents = "none";
+      }, 700);
+      backBtn.classList.add("show");
+      setTimeout(() => { detailTrigger.classList.add("show"); }, 900);
+    }
+
+    function exitFullSpline() {
+      if (!fullSplineMode) return;
+      fullSplineMode = false;
+      splitOverlay.style.pointerEvents = "";
+      splitOverlay.classList.remove("hide-all");
+      splitOverlay.classList.add("show");
+      backBtn.classList.remove("show");
+      detailTrigger.classList.remove("show");
+    }
+
+    function openDescCards() {
+      descCardsOverlay.classList.add("show");
+    }
+
+    function closeDescCards() {
+      descCardsOverlay.classList.remove("show");
+    }
+
+
+    function openTarotBox(e) {
+      if (e) e.stopPropagation();
+      topNav.classList.remove("open");
+      menuTarotModal.classList.add("show");
+      resetMenuTarot();
+    }
+
+    function closeTarotBox() {
+      menuTarotModal.classList.remove("show");
+    }
+
+    function resetMenuTarot() {
+      menuTarotResult.classList.remove("show");
+      menuTarotResult.innerHTML = "";
+      menuTarotCards.querySelectorAll(".menu-tarot-card").forEach(card => {
+        card.disabled = false;
+        card.classList.remove("picked", "dimmed");
+      });
+    }
+
+    menuTarotBackdrop.addEventListener("click", closeTarotBox);
+    menuTarotClose.addEventListener("click", closeTarotBox);
+
+    menuTarotCards.addEventListener("click", e => {
+      const pickedCard = e.target.closest(".menu-tarot-card");
+      if (!pickedCard) return;
+      const index = Number(pickedCard.dataset.index || 0);
+      const shuffled = [...tarotMessages].sort(() => Math.random() - 0.5);
+      const message = shuffled[index] || shuffled[0];
+
+      menuTarotCards.querySelectorAll(".menu-tarot-card").forEach(card => {
+        card.disabled = true;
+        if (card === pickedCard) card.classList.add("picked");
+        else card.classList.add("dimmed");
+      });
+
+      menuTarotResult.innerHTML = `<strong>${message.title}</strong>${message.body}`;
+      setTimeout(() => menuTarotResult.classList.add("show"), 220);
+    });
+
+    // Left half click
+    leftHalf.addEventListener("click", e => {
+      e.stopPropagation();
+      openDescCards();
+    });
+
+    // Right half click → enter full spline
+    rightHalf.addEventListener("click", e => {
+      e.stopPropagation();
+      enterFullSpline();
+    });
+
+    // Back button
+    backBtn.addEventListener("click", exitFullSpline);
+
+    // Detail trigger → open gem detail modal
+    detailTrigger.addEventListener("click", e => {
+      e.stopPropagation();
+      openGemDetail();
+    });
+
+    // Desc cards backdrop
+    descBackdrop.addEventListener("click", closeDescCards);
+    descCloseBtn.addEventListener("click", closeDescCards);
+
+    // Desc card 1 click → open artwork note detail
+    descCard1.addEventListener("click", e => {
+      e.stopPropagation();
+      openCardDetail("left");
+    });
+
+    // Desc card 2 click → open birthstone meaning detail
+    descCard2.addEventListener("click", e => {
+      e.stopPropagation();
+      openCardDetail("right");
+    });
+
+    // ================================================================
+    // CARD DETAIL (identical content to original)
+    // ================================================================
+    function openCardDetail(type) {
+      if (type === "left") {
+        cardDetailBody.innerHTML = `
+          <div class="card-detail-layout">
+            <div class="card-detail-image-wrap">
+              <img src="에메랄드2.jpg" alt="에메랄드 이미지">
+            </div>
+            <div class="card-detail-text">
+              <div class="card-detail-kicker">ARTWORK NOTE</div>
+              <h3 class="card-detail-title">Visual Interpretation of Emerald</h3>
+              <div class="card-detail-copy">
+                이 일러스트는 에메랄드를 단순한 보석 오브제로 보여주는 것이 아니라,
+                하나의 감정과 분위기로 확장해 해석하는 데서 출발했습니다.
+                저는 에메랄드가 가진 초록빛을 '자연' 하나로만 보지 않고,
+                조용하지만 깊게 남는 감정의 층위로 표현하고 싶었습니다.
+                <br><br>
+                그래서 형태는 지나치게 무겁거나 고정된 물성보다,
+                빛에 따라 흔들리고 살아나는 유기적인 흐름을 중심으로 구성했습니다.
+                중심에 시선을 모으는 구조를 두면서도,
+                주변 요소들이 함께 떠다니듯 배치되도록 해서
+                보석이 단독으로 존재하기보다 하나의 세계를 만드는 방식으로 전개했습니다.
+                <br><br>
+                화면 전체에 퍼지는 붉은 결, 반짝이는 입자, 그리고 유리처럼 투명한 질감은
+                에메랄드 내부에 잠들어 있는 생명력이 천천히 표면으로 드러나는 순간을 상상하며 만든 요소들입니다.
+                이는 실제 광물의 물성을 그대로 재현하기보다,
+                에메랄드가 불러오는 감각과 인상을 시각 언어로 번역한 결과에 가깝습니다.
+                <br><br>
+                결국 이 작업은 보석을 보는 장면이라기보다,
+                에메랄드라는 존재가 가진 분위기와 감정을 하나의 공간 안에서 체험하도록 만드는 시도입니다.
+                저는 이 일러스트를 통해
+                '보석을 설명하는 이미지'보다
+                '보석이 가진 정서를 보여주는 이미지'를 만들고자 했습니다.
+              </div>
+            </div>
+          </div>`;
+      }
+
+      if (type === "right") {
+        cardDetailBody.innerHTML = `
+          <div class="card-detail-layout">
+            <div class="card-detail-image-wrap">
+              <img src="Emerald_view_image.jpg" alt="에메랄드 상징 이미지">
+            </div>
+            <div class="card-detail-text">
+              <div class="card-detail-kicker">BIRTHSTONE MEANING</div>
+              <h3 class="card-detail-title">Growth and Harmony</h3>
+              <div class="card-detail-copy">
+                에메랄드는 5월의 탄생석으로, 오래전부터 성장과 조화, 치유를 상징하는 보석으로 여겨져 왔습니다.
+                저는 이 의미를 단순히 '붉은 보석'이라는 표면적인 이미지로 보여주기보다,
+                관계 안에서 오래 남는 감정의 밀도와 진심의 온도로 풀어내고 싶었습니다.
+                <br><br>
+                그래서 화면의 중심에는 강한 초록빛을 두고,
+                그 주위로 결이 퍼져나가는 구조를 만들었습니다.
+                이것은 한 사람의 진심이 바깥으로 번져나가며
+                관계를 밝히고 연결시키는 흐름을 상징합니다.
+                <br><br>
+                에메랄드가 가진 치유는 갑작스럽게 모든 것을 바꾸는 힘이라기보다,
+                시간이 지나도 쉽게 사라지지 않는 깊은 마음에 가깝다고 느꼈습니다.
+                조화 또한 순간적인 감정보다,
+                오래 축적되며 서로를 지탱하는 힘이라고 생각했습니다.
+                <br><br>
+                이 작업은 그런 에메랄드의 의미를
+                '빛', '결', 그리고 '중심에서 퍼져나가는 에너지'로 시각화한 결과입니다.
+                초록빛은 열정만이 아니라,
+                오래 지속되는 신뢰와 변하지 않는 진심의 형태로 존재하도록 구성했습니다.
+              </div>
+            </div>
+          </div>`;
+      }
+
+      cardDetailModal.classList.add("show");
+    }
+
+    function closeCardDetail() {
+      cardDetailModal.classList.remove("show");
+    }
+
+    cardDetailClose.addEventListener("click", closeCardDetail);
+    cardDetailBackdrop.addEventListener("click", closeCardDetail);
+
+    // Gem detail (kept from original)
+    function openGemDetail() { gemDetailModal.classList.add("show"); }
+    function closeGemDetail() { gemDetailModal.classList.remove("show"); }
+    gemDetailClose.addEventListener("click", closeGemDetail);
+    gemDetailBackdrop.addEventListener("click", closeGemDetail);
+
+    // ESC key
+    window.addEventListener("keydown", e => {
+      if (e.key === "Escape") {
+        closeCardDetail();
+        closeGemDetail();
+        closeDescCards();
+        closeTarotBox();
+        if (fullSplineMode) exitFullSpline();
+      }
+    });
+
+    // ================================================================
+    // LOADING / SPLINE REVEAL (identical to original)
+    // ================================================================
+    function playLoadingSfx() {
+      if (!loadingSfx || splineShown) return;
+      loadingSfx.pause(); loadingSfx.currentTime = 0;
+      loadingSfx.volume = 0.22;
+      loadingSfx.play().catch(() => { });
+    }
+
+    function startLoadingSfx() {
+      if (loadingSfxTimer) return;
+      loadingSfxTimer = setInterval(() => { playLoadingSfx(); }, 1330);
+    }
+
+    function revealSpline() {
+      if (splineShown) return;
+      splineShown = true;
+      if (loadingInterval) clearInterval(loadingInterval);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (loadingSfxTimer) clearInterval(loadingSfxTimer);
+
+      document.body.classList.remove("loading");
+      spline.classList.add("show");
+      posterImage.classList.add("hide");
+      loadingOverlay.classList.add("hide");
+
+      showSplitScreen();
+
+      loadingOverlay.addEventListener("transitionend", () => {
+        loadingOverlay.remove();
+      }, { once: true });
+    }
+
+    function tryRevealSpline() {
+      if (splineShown) return;
+      if (splineReady && minLoadingDone) revealSpline();
+    }
+
+    function waitForCanvas() {
+      const tryFind = () => {
+        const shadow = spline.shadowRoot;
+        if (!shadow) return false;
+        const canvas = shadow.querySelector("canvas");
+        if (!canvas) return false;
+        let frames = 0;
+        function waitFrames() {
+          frames++;
+          if (frames < 8) { requestAnimationFrame(waitFrames); return; }
+          setTimeout(() => { splineReady = true; tryRevealSpline(); }, 1000);
+        }
+        requestAnimationFrame(waitFrames);
+        return true;
+      };
+      if (tryFind()) return;
+      const observer = new MutationObserver(() => { if (tryFind()) observer.disconnect(); });
+      observer.observe(spline, { childList: true, subtree: true });
+    }
+
+    spline.addEventListener("load", waitForCanvas);
+
+    fallbackTimer = setTimeout(() => { splineReady = true; tryRevealSpline(); }, 9000);
+
+    function initPage() {
+      startLoadingSfx();
+      setTimeout(() => { createParticles(window.innerWidth <= 768 ? 28 : 45); }, 1200);
+      setTimeout(() => { minLoadingDone = true; tryRevealSpline(); }, 7500);
+    }
+
+    if (document.readyState === "loading") {
+      window.addEventListener("DOMContentLoaded", initPage);
+    } else {
+      initPage();
+    }
+
+    // ================================================================
+    // PARTICLES
+    // ================================================================
+    function createParticles(total = 45) {
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < total; i++) {
+        const p = document.createElement("div");
+        p.className = "particle";
+        let left, top;
+        while (true) {
+          left = Math.random() * 100; top = Math.random() * 100;
+          const dx = left - 50, dy = top - 50;
+          if (Math.sqrt(dx * dx + dy * dy) > 40) break;
+        }
+        p.style.left = `${left}%`; p.style.top = `${top}%`;
+        const rand = Math.random();
+        const size = rand < 0.65
+          ? Math.random() * 0.5 + 0.15
+          : rand < 0.9
+            ? Math.random() * 0.6 + 0.2
+            : Math.random() * 0.5 + 0.5;
+        p.style.setProperty("--size", `${size}vw`);
+        const r = 200 + Math.random() * 35, g = 240 + Math.random() * 15,
+          b = 220 + Math.random() * 30, a = 0.45 + Math.random() * 0.25;
+        p.style.setProperty("--color", `rgba(${r},${g},${b},${a})`);
+        const fD = 7 + Math.random() * 8, fk = 2 + Math.random() * 4, dl = Math.random() * 5;
+        p.style.animationDuration = `${fD}s, ${fk}s`;
+        p.style.animationDelay = `${dl}s, ${Math.random() * 2}s`;
+        frag.appendChild(p);
+      }
+      particlesWrap.appendChild(frag);
+    }
+
+    // ================================================================
+    // MUSIC / NAV / MODE TOGGLE (identical to original)
+    // ================================================================
+    musicBtn.addEventListener("click", async e => {
+      e.stopPropagation();
+      audio.volume = 0.45;
+      try {
+        if (audio.paused) {
+          await audio.play();
+          musicBtn.classList.add("playing");
+          musicLabel.textContent = "music off";
+        } else {
+          audio.pause();
+          musicBtn.classList.remove("playing");
+          musicLabel.textContent = "music on";
+        }
+      } catch (err) { console.error("오디오 재생 실패:", err); }
+    });
+
+    menuToggleBtn.addEventListener("click", e => {
+      e.stopPropagation();
+      topNav.classList.toggle("open");
+    });
+
+    window.addEventListener("click", e => {
+      if (!topNav.contains(e.target)) topNav.classList.remove("open");
+    });
+
+    toggle.addEventListener("click", () => {
+      toggle.classList.toggle("active");
+      if (toggle.classList.contains("active")) {
+        spline.style.transform = "scale(1.1)";
+        spline.style.filter = "brightness(0.6) blur(2px)";
+        particlesWrap.style.opacity = "0.1";
+        overlay.classList.add("show");
+        setTimeout(() => { window.location.href = "Emerald_star_view.html"; }, 800);
+      } else {
+        spline.style.transform = "scale(1)";
+        spline.style.filter = "none";
+        particlesWrap.style.opacity = "1";
+      }
+    });
+
+    function goMenu() {
+      overlay.classList.add("show");
+      setTimeout(() => { window.location.href = "The gem I am.html"; }, 700);
+    }
+
+    function goCollectGem() {
+      overlay.classList.add("show");
+      setTimeout(() => { window.location.href = "gem collection.html"; }, 700);
+    }
+  </script>
+</body>
+
+</html>
